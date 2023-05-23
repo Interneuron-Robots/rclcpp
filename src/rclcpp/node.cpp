@@ -605,16 +605,3 @@ Node::get_node_options() const
 {
   return this->node_options_;
 }
-
-#ifdef INTERNEURON
-bool
-Node::init_timepoint(const std::string & topic_name, std::vector<std::string>& sensor_names){
-  return this->node_base_->init_timepoint(topic_name, sensor_names);
-}
-
-bool
-Node::update_timepoint(const std::string & topic_name,const std::string & sensor_name, uint64_t new_time, uint8_t x, rclcpp::MonitorTime target){
-  return this->node_base_->update_timepoint(topic_name, sensor_name, new_time, x, target);
-}
- 
-#endif

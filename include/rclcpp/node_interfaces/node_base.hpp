@@ -128,18 +128,6 @@ public:
   resolve_topic_or_service_name(
     const std::string & name, bool is_service, bool only_expand = false) const override;
 
-#ifdef INTERNEURON
-//RCLCPP_PUBLIC
-//uint32_t get_time_in_milliseconds()const override;
-
-RCLCPP_PUBLIC
-bool
-init_timepoint(const std::string & topic_name, std::vector<std::string>& sensor_names)override;
-
-RCLCPP_PUBLIC
-bool
-update_timepoint(const std::string & topic_name,const std::string & sensor_name, uint64_t new_time, uint8_t x, rclcpp::MonitorTime target) override;
-#endif
 
 private:
   RCLCPP_DISABLE_COPY(NodeBase)
@@ -161,12 +149,6 @@ private:
   rclcpp::GuardCondition notify_guard_condition_;
   bool notify_guard_condition_is_valid_;
 
-  #ifdef INTERNEURON
-//rclcpp::Clock clock_;
-
-  std::mutex mtx_;
-  std::map<std::string,std::map<std::string,TimePoint>>timepoints_;// topic-pub/sub-sensor_name-timepoint
-  #endif
 };
 
 }  // namespace node_interfaces

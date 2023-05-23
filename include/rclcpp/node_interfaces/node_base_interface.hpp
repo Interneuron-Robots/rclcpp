@@ -31,76 +31,6 @@
 namespace rclcpp
 {
 
-#ifdef INTERNEURON
-enum class MonitorTime{
-  ReferenceTime,
-  RemainTime,
-  WaitTime
-};
-/*
-* Struct for recording history of one time point
-*/
-class TimePoint{
-public:
-RCLCPP_PUBLIC
-explicit TimePoint(){}
-
-RCLCPP_PUBLIC
-uint64_t reference_time(){
-  return this->reference_time_;
-}
-RCLCPP_PUBLIC
-uint64_t remain_time(){
-  return this->remain_time_;
-}
-RCLCPP_PUBLIC
-uint64_t wait_time(){
-  return this->wait_time_;
-}
-RCLCPP_PUBLIC
-uint64_t last_sample(){
-  return this->last_sample_;
-}
-RCLCPP_PUBLIC
-bool update_time(uint64_t new_time, uint8_t x, MonitorTime target){
-switch(target){
-  case MonitorTime::ReferenceTime:{
-    this->reference_time_ = (this->reference_time_*(100-x) + new_time*x)/100;
-    break;
-  }
-  case MonitorTime::RemainTime:{
-    this->remain_time_ = (this->remain_time_*(100-x) + new_time*x)/100;
-    break;
-  }
-  case MonitorTime::WaitTime:{
-    this->wait_time_ = (this->wait_time_*(100-x) + new_time*x)/100;
-    break;
-  }
-}
-return true;
-};
-
-private:
-
-//history. in nanoseconds
-// usual time from start of the chain till now, for sensor, it is the sample time(time from last sample till now)
-uint64_t reference_time_;
-// how much free time it could use, it can be a part of the total free time, or equals to the total free time
-uint64_t remain_time_;
-uint64_t wait_time_;// the usual time to wait for, 0 means no need to wait
-
-// the time of last sample, for sensor, it is the time of last sample
-uint64_t last_sample_;
-
-#ifdef INTERNEURON_DEBUG
-//record each update
-#endif
-//TODO: more info
-};
-
-#endif
-
-
 namespace node_interfaces
 {
 
@@ -244,23 +174,6 @@ public:
   resolve_topic_or_service_name(
     const std::string & name, bool is_service, bool only_expand = false) const = 0;
 
-#ifdef INTERNEURON
-
-// get current time in milliseconds
-//RCLCPP_PUBLIC
-//virtual
-//uint32_t 
-//get_time_in_milliseconds() const = 0;
-
-  RCLCPP_PUBLIC
-  virtual
-  bool init_timepoint(const std::string & topic_name, std::vector<std::string>& sensor_names)= 0;
-
-  RCLCPP_PUBLIC
-  virtual
-  bool update_timepoint(const std::string & topic_name,const std::string & sensor_name, uint64_t new_time, uint8_t x, rclcpp::MonitorTime target) = 0;
-
-#endif
 };
 
 }  // namespace node_interfaces

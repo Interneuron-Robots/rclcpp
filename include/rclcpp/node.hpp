@@ -1282,16 +1282,6 @@ public:
   const rclcpp::NodeOptions &
   get_node_options() const;
 
-  #ifdef INTERNEURON
-  RCLCPP_PUBLIC
-bool
-init_timepoint(const std::string & topic_name, std::vector<std::string>& sensor_names);
-
-RCLCPP_PUBLIC
-bool
-update_timepoint(const std::string & topic_name,const std::string & sensor_name, uint64_t new_time, uint8_t x, rclcpp::MonitorTime target);
-  #endif
-
 protected:
   /// Construct a sub-node, which will extend the namespace of all entities created with it.
   /**

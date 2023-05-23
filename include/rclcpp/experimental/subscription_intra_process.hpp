@@ -24,7 +24,9 @@
 #include <utility>
 
 #include "rcl/types.h"
+#include "rcl/time.h"
 
+#include "rclcpp/clock.hpp"
 #include "rclcpp/any_subscription_callback.hpp"
 #include "rclcpp/context.hpp"
 #include "rclcpp/experimental/buffers/intra_process_buffer.hpp"
@@ -71,6 +73,10 @@ public:
   using MessageUniquePtr = typename SubscriptionIntraProcessBufferT::SubscribedTypeUniquePtr;
   using BufferUniquePtr = typename SubscriptionIntraProcessBufferT::BufferUniquePtr;
 
+  #ifdef INTERNEURON
+  rclcpp::Clock ros_clock;
+  #endif
+
   SubscriptionIntraProcess(
     AnySubscriptionCallback<MessageT, Alloc> callback,
     std::shared_ptr<Alloc> allocator,
@@ -87,6 +93,7 @@ public:
       buffer_type),
     any_callback_(callback)
   {
+ 
     TRACEPOINT(
       rclcpp_subscription_callback_added,
       static_cast<const void *>(this),
@@ -150,6 +157,9 @@ protected:
     rmw_message_info_t msg_info;
     msg_info.publisher_gid = {0, {0}};
     msg_info.from_intra_process = true;
+    #ifdef INTERNEURON
+    msg_info.received_timestamp = static_cast<int64_t>(ros_clock.now().nanoseconds());
+    #endif
 
     auto shared_ptr = std::static_pointer_cast<std::pair<ConstMessageSharedPtr, MessageUniquePtr>>(
       data);
