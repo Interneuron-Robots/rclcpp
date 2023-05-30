@@ -31,6 +31,10 @@
 #include "rclcpp/qos.hpp"
 #include "rclcpp/type_support_decl.hpp"
 
+#ifdef INTERNEURON
+#include "rclcpp/message_info.hpp"
+#endif
+
 namespace rclcpp
 {
 namespace experimental
@@ -156,6 +160,10 @@ public:
     trigger_guard_condition();
     this->invoke_on_new_message();
   }
+
+  #ifdef INTERNEURON
+  //todo add message_info related functions
+  #endif
 
   bool
   use_take_shared_method() const override

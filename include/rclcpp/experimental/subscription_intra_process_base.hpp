@@ -28,6 +28,10 @@
 #include "rclcpp/qos.hpp"
 #include "rclcpp/waitable.hpp"
 
+#ifdef INTERNEURON
+#include "rclcpp/message_info.hpp"
+#endif
+
 namespace rclcpp
 {
 namespace experimental

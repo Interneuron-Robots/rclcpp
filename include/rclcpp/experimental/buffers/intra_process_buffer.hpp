@@ -24,6 +24,7 @@
 #include "rclcpp/allocator/allocator_deleter.hpp"
 #include "rclcpp/experimental/buffers/buffer_implementation_base.hpp"
 #include "rclcpp/macros.hpp"
+#include "rclcpp/message_info.hpp"
 
 namespace rclcpp
 {
@@ -64,6 +65,16 @@ public:
 
   virtual MessageSharedPtr consume_shared() = 0;
   virtual MessageUniquePtr consume_unique() = 0;
+  #ifdef INTERNEURON
+  // message_info should always be unique_ptr
+  using MessageInfoUniquePtr = std::unique_ptr<rclcpp::MessageInfo>;
+
+  virtual void add_shared(MessageSharedPtr msg, MessageInfoUniquePtr message_info) = 0;
+  virtual void add_unique(MessageUniquePtr msg, MessageInfoUniquePtr message_info) = 0;
+
+  virtual std::pair<MessageSharedPtr,MessageInfoUniquePtr> consume_shared_with_message_info() = 0;
+  virtual std::pair<MessageUniquePtr,MessageInfoUniquePtr> consume_unique_with_message_info() = 0;
+  #endif
 };
 
 template<
@@ -80,6 +91,10 @@ public:
   using MessageAlloc = typename MessageAllocTraits::allocator_type;
   using MessageUniquePtr = std::unique_ptr<MessageT, MessageDeleter>;
   using MessageSharedPtr = std::shared_ptr<const MessageT>;
+  #ifdef INTERNEURON
+  using MessageInfoUniquePtr = std::unique_ptr<rclcpp::MessageInfo>;
+  #endif
+
 
   explicit
   TypedIntraProcessBuffer(
@@ -122,6 +137,28 @@ public:
   {
     return consume_unique_impl<BufferT>();
   }
+
+  #ifdef INTERNEURON
+  void add_shared(MessageSharedPtr msg, MessageInfoUniquePtr message_info) override
+  {
+    add_shared_impl<BufferT>(std::move(msg), std::move(message_info));
+  }
+
+  void add_unique(MessageUniquePtr msg,MessageInfoUniquePtr message_info) override
+  {
+    buffer_->enqueue(std::move(msg),std::move(message_info));
+  }
+
+  std::pair<MessageSharedPtr, MessageInfoUniquePtr> consume_shared_with_message_info() override
+  {
+    return consume_shared_impl_with_message_info<BufferT>();
+  }
+
+  std::pair<MessageUniquePtr,MessageInfoUniquePtr> consume_unique_with_message_info() override
+  {
+    return consume_unique_impl_with_message_info<BufferT>();
+  }
+  #endif
 
   bool has_data() const override
   {
@@ -232,6 +269,100 @@ private:
   {
     return buffer_->dequeue();
   }
+  
+  #ifdef INTERNEURON
+  // MessageSharedPtr to MessageSharedPtr
+  template<typename DestinationT>
+  typename std::enable_if<
+    std::is_same<DestinationT, MessageSharedPtr>::value
+  >::type
+  add_shared_impl(MessageSharedPtr shared_msg, MessageInfoUniquePtr message_info)
+  {
+    buffer_->enqueue(std::move(shared_msg),std::move(message_info));
+  }
+
+  // MessageSharedPtr to MessageUniquePtr
+  template<typename DestinationT>
+  typename std::enable_if<
+    std::is_same<DestinationT, MessageUniquePtr>::value
+  >::type
+  add_shared_impl(MessageSharedPtr shared_msg, MessageInfoUniquePtr message_info)
+  {
+    // This should not happen: here a copy is unconditionally made, while the intra-process manager
+    // can decide whether a copy is needed depending on the number and the type of buffers
+
+    MessageUniquePtr unique_msg;
+    MessageDeleter * deleter = std::get_deleter<MessageDeleter, const MessageT>(shared_msg);
+    auto ptr = MessageAllocTraits::allocate(*message_allocator_.get(), 1);
+    MessageAllocTraits::construct(*message_allocator_.get(), ptr, *shared_msg);
+    if (deleter) {
+      unique_msg = MessageUniquePtr(ptr, *deleter);
+    } else {
+      unique_msg = MessageUniquePtr(ptr);
+    }
+
+    buffer_->enqueue(std::move(unique_msg),std::move(message_info));
+  }
+
+  // MessageSharedPtr to MessageSharedPtr
+  template<typename OriginT>
+  typename std::enable_if<
+    std::is_same<OriginT, MessageSharedPtr>::value,
+    std::pair<MessageSharedPtr, MessageInfoUniquePtr>
+  >::type
+  consume_shared_impl_with_message_info()
+  {
+    return buffer_->dequeue_with_message_info();
+  }
+
+  // MessageUniquePtr to MessageSharedPtr
+  template<typename OriginT>
+  typename std::enable_if<
+    (std::is_same<OriginT, MessageUniquePtr>::value),
+    std::pair<MessageSharedPtr, MessageInfoUniquePtr>
+  >::type
+  consume_shared_impl_with_message_info()
+  {
+    // automatic cast from unique ptr to shared ptr
+    return buffer_->dequeue_with_message_info();
+  }
+
+  // MessageSharedPtr to MessageUniquePtr
+  template<typename OriginT>
+  typename std::enable_if<
+    (std::is_same<OriginT, MessageSharedPtr>::value),
+    std::pair<MessageUniquePtr,MessageInfoUniquePtr>
+  >::type
+  consume_unique_impl()
+  {
+    MessageSharedPtr buffer_msg;
+    MessageInfoUniquePtr message_info;
+    std::tie(buffer_msg, message_info) = buffer_->dequeue_with_message_info();
+
+    MessageUniquePtr unique_msg;
+    MessageDeleter * deleter = std::get_deleter<MessageDeleter, const MessageT>(buffer_msg);
+    auto ptr = MessageAllocTraits::allocate(*message_allocator_.get(), 1);
+    MessageAllocTraits::construct(*message_allocator_.get(), ptr, *buffer_msg);
+    if (deleter) {
+      unique_msg = MessageUniquePtr(ptr, *deleter);
+    } else {
+      unique_msg = MessageUniquePtr(ptr);
+    }
+
+    return {unique_msg,std::move(message_info)};
+  }
+
+  // MessageUniquePtr to MessageUniquePtr
+  template<typename OriginT>
+  typename std::enable_if<
+    (std::is_same<OriginT, MessageUniquePtr>::value),
+    std::pair<MessageUniquePtr,MessageInfoUniquePtr>
+  >::type
+  consume_unique_impl_with_message_info()
+  {
+    return buffer_->dequeue_with_message_info();
+  }
+  #endif
 };
 
 }  // namespace buffers

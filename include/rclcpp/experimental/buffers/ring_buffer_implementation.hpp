@@ -26,6 +26,10 @@
 #include "rclcpp/macros.hpp"
 #include "rclcpp/visibility_control.hpp"
 
+#ifdef INTERNEURON
+#include "rclcpp/message_info.hpp"
+#endif
+
 namespace rclcpp
 {
 namespace experimental
@@ -48,6 +52,9 @@ public:
     read_index_(0),
     size_(0)
   {
+    #ifdef INTERNEURON
+    message_info_buffer_.reserve(capacity);
+    #endif
     if (capacity == 0) {
       throw std::invalid_argument("capacity must be a positive, non-zero value");
     }
@@ -96,7 +103,51 @@ public:
 
     return request;
   }
+#ifdef INTERNEURON
+/// Add a new element to store in the ring buffer
+  /**
+   * This member function is thread-safe.
+   *
+   * \param request the element to be stored in the ring buffer
+   */
+  void enqueue(BufferT request, std::unique_ptr<rclcpp::MessageInfo>message_info)
+  {
+    std::lock_guard<std::mutex> lock(mutex_);
 
+    write_index_ = next_(write_index_);
+    ring_buffer_[write_index_] = std::move(request);
+    message_info_buffer_[write_index_] = std::move(message_info);
+
+    if (is_full_()) {
+      read_index_ = next_(read_index_);
+    } else {
+      size_++;
+    }
+  }
+
+  /// Remove the oldest element from ring buffer
+  /**
+   * This member function is thread-safe.
+   *
+   * \return the element that is being removed from the ring buffer
+   */
+  std::pair<BufferT, rclcpp::MessageInfo> dequeue_with_message_info()
+  {
+    std::lock_guard<std::mutex> lock(mutex_);
+
+    if (!has_data_()) {
+      return {BufferT(), rclcpp::MessageInfo()};
+    }
+
+    auto request = std::move(ring_buffer_[read_index_]);
+    auto message_info = std::move(message_info_buffer_[read_index_]);
+    read_index_ = next_(read_index_);
+
+    size_--;
+
+    return {request, message_info};
+  }
+#endif
   /// Get the next index value for the ring buffer
   /**
    * This member function is thread-safe.
@@ -176,6 +227,9 @@ private:
   size_t capacity_;
 
   std::vector<BufferT> ring_buffer_;
+  #ifdef INTERNEURON
+  std::vector<rclcpp::MessageInfo> message_info_buffer_;
+  #endif
 
   size_t write_index_;
   size_t read_index_;

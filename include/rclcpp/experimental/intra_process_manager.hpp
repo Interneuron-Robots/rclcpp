@@ -39,6 +39,10 @@
 #include "rclcpp/type_adapter.hpp"
 #include "rclcpp/visibility_control.hpp"
 
+#ifdef INTERNEURON
+#include "rclcpp/message_info.hpp"
+#endif
+
 namespace rclcpp
 {
 
@@ -291,6 +295,152 @@ public:
       return shared_msg;
     }
   }
+
+#ifdef INTERNEURON
+  /// Publishes an intra-process message, passed as a unique pointer.
+  /**
+   * This is one of the two methods for publishing intra-process.
+   *
+   * Using the intra-process publisher id, a list of recipients is obtained.
+   * This list is split in half, depending whether they require ownership or not.
+   *
+   * This particular method takes a unique pointer as input.
+   * The pointer can be promoted to a shared pointer and passed to all the subscriptions
+   * that do not require ownership.
+   * In case of subscriptions requiring ownership, the message will be copied for all of
+   * them except the last one, when ownership can be transferred.
+   *
+   * This method can save an additional copy compared to the shared pointer one.
+   *
+   * This method can throw an exception if the publisher id is not found or
+   * if the publisher shared_ptr given to add_publisher has gone out of scope.
+   *
+   * This method does allocate memory.
+   *
+   * \param intra_process_publisher_id the id of the publisher of this message.
+   * \param message the message that is being stored.
+   * \param allocator for allocations when buffering messages.
+   */
+  template<
+    typename MessageT,
+    typename ROSMessageType,
+    typename Alloc,
+    typename Deleter = std::default_delete<MessageT>
+  >
+  void
+  do_intra_process_publish(
+    uint64_t intra_process_publisher_id,
+    std::unique_ptr<MessageT, Deleter> message,
+    typename allocator::AllocRebind<MessageT, Alloc>::allocator_type & allocator,
+    std::unique_ptr<rclcpp::MessageInfo> message_info)
+  {
+    using MessageAllocTraits = allocator::AllocRebind<MessageT, Alloc>;
+    using MessageAllocatorT = typename MessageAllocTraits::allocator_type;
+
+    std::shared_lock<std::shared_timed_mutex> lock(mutex_);
+
+    auto publisher_it = pub_to_subs_.find(intra_process_publisher_id);
+    if (publisher_it == pub_to_subs_.end()) {
+      // Publisher is either invalid or no longer exists.
+      RCLCPP_WARN(
+        rclcpp::get_logger("rclcpp"),
+        "Calling do_intra_process_publish for invalid or no longer existing publisher id");
+      return;
+    }
+    const auto & sub_ids = publisher_it->second;
+
+    if (sub_ids.take_ownership_subscriptions.empty()) {
+      // None of the buffers require ownership, so we promote the pointer
+      std::shared_ptr<MessageT> msg = std::move(message);
+
+      this->template add_shared_msg_to_buffers<MessageT, Alloc, Deleter, ROSMessageType>(
+        msg, sub_ids.take_shared_subscriptions);
+    } else if (!sub_ids.take_ownership_subscriptions.empty() && // NOLINT
+      sub_ids.take_shared_subscriptions.size() <= 1)
+    {
+      // There is at maximum 1 buffer that does not require ownership.
+      // So this case is equivalent to all the buffers requiring ownership
+
+      // Merge the two vector of ids into a unique one
+      std::vector<uint64_t> concatenated_vector(sub_ids.take_shared_subscriptions);
+      concatenated_vector.insert(
+        concatenated_vector.end(),
+        sub_ids.take_ownership_subscriptions.begin(),
+        sub_ids.take_ownership_subscriptions.end());
+      this->template add_owned_msg_to_buffers<MessageT, Alloc, Deleter, ROSMessageType>(
+        std::move(message),
+        concatenated_vector,
+        allocator);
+    } else if (!sub_ids.take_ownership_subscriptions.empty() && // NOLINT
+      sub_ids.take_shared_subscriptions.size() > 1)
+    {
+      // Construct a new shared pointer from the message
+      // for the buffers that do not require ownership
+      auto shared_msg = std::allocate_shared<MessageT, MessageAllocatorT>(allocator, *message);
+
+      this->template add_shared_msg_to_buffers<MessageT, Alloc, Deleter, ROSMessageType>(
+        shared_msg, sub_ids.take_shared_subscriptions);
+      this->template add_owned_msg_to_buffers<MessageT, Alloc, Deleter, ROSMessageType>(
+        std::move(message), sub_ids.take_ownership_subscriptions, allocator);
+    }
+  }
+
+  template<
+    typename MessageT,
+    typename ROSMessageType,
+    typename Alloc,
+    typename Deleter = std::default_delete<MessageT>
+  >
+  std::shared_ptr<const MessageT>
+  do_intra_process_publish_and_return_shared(
+    uint64_t intra_process_publisher_id,
+    std::unique_ptr<MessageT, Deleter> message,
+    typename allocator::AllocRebind<MessageT, Alloc>::allocator_type & allocator,
+    std::unique_ptr<rclcpp::MessageInfo> message_info)
+  {
+    using MessageAllocTraits = allocator::AllocRebind<MessageT, Alloc>;
+    using MessageAllocatorT = typename MessageAllocTraits::allocator_type;
+
+    std::shared_lock<std::shared_timed_mutex> lock(mutex_);
+
+    auto publisher_it = pub_to_subs_.find(intra_process_publisher_id);
+    if (publisher_it == pub_to_subs_.end()) {
+      // Publisher is either invalid or no longer exists.
+      RCLCPP_WARN(
+        rclcpp::get_logger("rclcpp"),
+        "Calling do_intra_process_publish for invalid or no longer existing publisher id");
+      return nullptr;
+    }
+    const auto & sub_ids = publisher_it->second;
+
+    if (sub_ids.take_ownership_subscriptions.empty()) {
+      // If there are no owning, just convert to shared.
+      std::shared_ptr<MessageT> shared_msg = std::move(message);
+      if (!sub_ids.take_shared_subscriptions.empty()) {
+        this->template add_shared_msg_to_buffers<MessageT, Alloc, Deleter, ROSMessageType>(
+          shared_msg, sub_ids.take_shared_subscriptions);
+      }
+      return shared_msg;
+    } else {
+      // Construct a new shared pointer from the message for the buffers that
+      // do not require ownership and to return.
+      auto shared_msg = std::allocate_shared<MessageT, MessageAllocatorT>(allocator, *message);
+
+      if (!sub_ids.take_shared_subscriptions.empty()) {
+        this->template add_shared_msg_to_buffers<MessageT, Alloc, Deleter, ROSMessageType>(
+          shared_msg,
+          sub_ids.take_shared_subscriptions);
+      }
+      if (!sub_ids.take_ownership_subscriptions.empty()) {
+        this->template add_owned_msg_to_buffers<MessageT, Alloc, Deleter, ROSMessageType>(
+          std::move(message),
+          sub_ids.take_ownership_subscriptions,
+          allocator);
+      }
+      return shared_msg;
+    }
+  }
+#endif
 
   /// Return true if the given rmw_gid_t matches any stored Publishers.
   RCLCPP_PUBLIC
