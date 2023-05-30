@@ -304,6 +304,7 @@ private:
     buffer_->enqueue(std::move(unique_msg),std::move(message_info));
   }
 
+
   // MessageSharedPtr to MessageSharedPtr
   template<typename OriginT>
   typename std::enable_if<
@@ -333,7 +334,7 @@ private:
     (std::is_same<OriginT, MessageSharedPtr>::value),
     std::pair<MessageUniquePtr,MessageInfoUniquePtr>
   >::type
-  consume_unique_impl()
+  consume_unique_impl_with_message_info()
   {
     MessageSharedPtr buffer_msg;
     MessageInfoUniquePtr message_info;
@@ -349,7 +350,7 @@ private:
       unique_msg = MessageUniquePtr(ptr);
     }
 
-    return {unique_msg,std::move(message_info)};
+    return std::make_pair(std::move(unique_msg),std::move(message_info));
   }
 
   // MessageUniquePtr to MessageUniquePtr
@@ -362,6 +363,7 @@ private:
   {
     return buffer_->dequeue_with_message_info();
   }
+  
   #endif
 };
 

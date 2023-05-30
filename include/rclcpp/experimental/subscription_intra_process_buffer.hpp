@@ -162,7 +162,49 @@ public:
   }
 
   #ifdef INTERNEURON
-  //todo add message_info related functions
+  using MessageInfoUniquePtr = std::unique_ptr<rclcpp::MessageInfo>;
+  void
+  provide_intra_process_message(ConstMessageSharedPtr message, MessageInfoUniquePtr message_info) override
+  {
+    if constexpr (std::is_same<SubscribedType, ROSMessageType>::value) {
+      buffer_->add_shared(std::move(message), std::move(message_info));
+      trigger_guard_condition();
+    } else {
+      buffer_->add_shared(convert_ros_message_to_subscribed_type_unique_ptr(*message), std::move(message_info));
+      trigger_guard_condition();
+    }
+    this->invoke_on_new_message();
+  }
+
+  void
+  provide_intra_process_message(MessageUniquePtr message, MessageInfoUniquePtr message_info) override
+  {
+    if constexpr (std::is_same<SubscribedType, ROSMessageType>::value) {
+      buffer_->add_unique(std::move(message), std::move(message_info));
+      trigger_guard_condition();
+    } else {
+      buffer_->add_unique(convert_ros_message_to_subscribed_type_unique_ptr(*message), std::move(message_info));
+      trigger_guard_condition();
+    }
+    this->invoke_on_new_message();
+  }
+
+  void
+  provide_intra_process_data(ConstDataSharedPtr message, MessageInfoUniquePtr message_info)
+  {
+    buffer_->add_shared(std::move(message), std::move(message_info));
+    trigger_guard_condition();
+    this->invoke_on_new_message();
+  }
+
+  void
+  provide_intra_process_data(SubscribedTypeUniquePtr message, MessageInfoUniquePtr message_info)
+  {
+    buffer_->add_unique(std::move(message), std::move(message_info));
+    trigger_guard_condition();
+    this->invoke_on_new_message();
+  }
+
   #endif
 
   bool

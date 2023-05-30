@@ -1,3 +1,10 @@
+/*
+ * @Description: 
+ * @Author: Sauron
+ * @Date: 2023-05-16 17:07:07
+ * @LastEditTime: 2023-05-30 17:47:02
+ * @LastEditors: Sauron
+ */
 // Copyright 2021 Open Source Robotics Foundation, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,6 +31,9 @@
 #include "rclcpp/context.hpp"
 #include "rclcpp/experimental/subscription_intra_process_base.hpp"
 #include "tracetools/tracetools.h"
+#ifdef INTERNEURON
+#include "rclcpp/message_info.hpp"
+#endif
 
 namespace rclcpp
 {
@@ -44,6 +54,9 @@ public:
 
   using ConstMessageSharedPtr = std::shared_ptr<const RosMessageT>;
   using MessageUniquePtr = std::unique_ptr<RosMessageT, ROSMessageTypeDeleter>;
+  #ifdef INTERNEURON
+  using MessageInfoUniquePtr = std::unique_ptr<rclcpp::MessageInfo>;
+  #endif
 
   SubscriptionROSMsgIntraProcessBuffer(
     rclcpp::Context::SharedPtr context,
@@ -60,6 +73,14 @@ public:
 
   virtual void
   provide_intra_process_message(MessageUniquePtr message) = 0;
+
+  #ifdef INTERNEURON
+  virtual void
+  provide_intra_process_message(ConstMessageSharedPtr message, MessageInfoUniquePtr message_info) = 0;
+
+  virtual void
+  provide_intra_process_message(MessageUniquePtr message, MessageInfoUniquePtr message_info) = 0;
+  #endif
 };
 
 }  // namespace experimental

@@ -2,7 +2,7 @@
  * @Description: 
  * @Author: Sauron
  * @Date: 2023-05-16 17:07:07
- * @LastEditTime: 2023-05-23 17:31:10
+ * @LastEditTime: 2023-05-30 17:29:35
  * @LastEditors: Sauron
  */
 // Copyright 2020 Open Source Robotics Foundation, Inc.
@@ -66,6 +66,7 @@ public:
 private:
   rmw_message_info_t rmw_message_info_;
   #ifdef INTERNEURON
+  // todo, should at least be a map that contains different sensors
   uint64_t start_time_;
   uint64_t remain_time_;
   #endif

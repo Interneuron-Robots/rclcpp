@@ -48,13 +48,13 @@ public:
   explicit RingBufferImplementation(size_t capacity)
   : capacity_(capacity),
     ring_buffer_(capacity),
+    #ifdef INTERNEURON
+    message_info_buffer_(capacity),
+    #endif
     write_index_(capacity_ - 1),
     read_index_(0),
     size_(0)
   {
-    #ifdef INTERNEURON
-    message_info_buffer_.reserve(capacity);
-    #endif
     if (capacity == 0) {
       throw std::invalid_argument("capacity must be a positive, non-zero value");
     }
@@ -131,21 +131,21 @@ public:
    *
    * \return the element that is being removed from the ring buffer
    */
-  std::pair<BufferT, rclcpp::MessageInfo> dequeue_with_message_info()
+  std::pair<BufferT, std::unique_ptr<rclcpp::MessageInfo>> dequeue_with_message_info()
   {
     std::lock_guard<std::mutex> lock(mutex_);
 
     if (!has_data_()) {
-      return {BufferT(), rclcpp::MessageInfo()};
+      return std::make_pair(BufferT(), std::make_unique<rclcpp::MessageInfo>());
     }
-
-    auto request = std::move(ring_buffer_[read_index_]);
-    auto message_info = std::move(message_info_buffer_[read_index_]);
+    auto old_index = read_index_;
+    //auto request = std::move(ring_buffer_[read_index_]);
+    //auto message_info = std::move(message_info_buffer_[read_index_]);
     read_index_ = next_(read_index_);
 
     size_--;
 
-    return {request, message_info};
+    return std::make_pair(std::move(ring_buffer_[old_index]), std::move(message_info_buffer_[old_index]));
   }
 #endif
   /// Get the next index value for the ring buffer
@@ -228,7 +228,7 @@ private:
 
   std::vector<BufferT> ring_buffer_;
   #ifdef INTERNEURON
-  std::vector<rclcpp::MessageInfo> message_info_buffer_;
+  std::vector<std::unique_ptr<rclcpp::MessageInfo>> message_info_buffer_;
   #endif
 
   size_t write_index_;

@@ -2,7 +2,7 @@
  * @Description: 
  * @Author: Sauron
  * @Date: 2023-05-16 17:07:07
- * @LastEditTime: 2023-05-29 22:26:42
+ * @LastEditTime: 2023-05-29 23:22:38
  * @LastEditors: Sauron
  */
 // Copyright 2019 Open Source Robotics Foundation, Inc.
@@ -40,7 +40,7 @@ public:
   virtual void enqueue(BufferT request) = 0;
 
   #ifdef INTERNEURON
-  virtual std::pair<BufferT, rclcpp::MessageInfo> dequeue_with_message_info() = 0;
+  virtual std::pair<BufferT, std::unique_ptr<rclcpp::MessageInfo>> dequeue_with_message_info() = 0;
   virtual void enqueue(BufferT request, std::unique_ptr<rclcpp::MessageInfo>message_info) = 0;
   #endif
   virtual void clear() = 0;
