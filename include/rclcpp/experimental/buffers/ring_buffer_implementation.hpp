@@ -136,7 +136,8 @@ public:
     std::lock_guard<std::mutex> lock(mutex_);
 
     if (!has_data_()) {
-      return std::make_pair(BufferT(), std::make_unique<rclcpp::MessageInfo>());
+      //return std::make_pair(BufferT(), std::make_unique<rclcpp::MessageInfo>());
+      return std::make_pair(BufferT(), nullptr);
     }
     auto old_index = read_index_;
     //auto request = std::move(ring_buffer_[read_index_]);

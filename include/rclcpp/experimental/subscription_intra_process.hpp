@@ -108,6 +108,34 @@ public:
 
   virtual ~SubscriptionIntraProcess() = default;
 
+  
+  #ifdef INTERNEURON
+  std::shared_ptr<void>
+  take_data() override
+  {
+    ConstMessageSharedPtr shared_msg;
+    MessageUniquePtr unique_msg;
+    std::unique_ptr<rclcpp::MessageInfo> message_info;
+
+    if (any_callback_.use_take_shared_method()) {
+      std::tie(shared_msg, message_info) = this->buffer_->consume_shared_with_message_info();
+      if (!shared_msg || !message_info) {
+        return nullptr;
+      }
+    } else {
+      std::tie(unique_msg, message_info) = this->buffer_->consume_unique_with_message_info();
+      if (!unique_msg || !message_info) {
+        return nullptr;
+      }
+    }
+    return std::static_pointer_cast<void>(
+      std::make_shared<std::tuple<ConstMessageSharedPtr, MessageUniquePtr, std::unique_ptr<rclcpp::MessageInfo>>>(
+        std::tuple<ConstMessageSharedPtr, MessageUniquePtr,std::unique_ptr<rclcpp::MessageInfo>>(
+          shared_msg, std::move(unique_msg),
+        std::move(message_info)))
+    );
+  }
+  #else
   std::shared_ptr<void>
   take_data() override
   {
@@ -132,6 +160,8 @@ public:
     );
   }
 
+  #endif
+
   void execute(std::shared_ptr<void> & data) override
   {
     execute_impl<SubscribedType>(data);
@@ -146,6 +176,32 @@ protected:
     throw std::runtime_error("Subscription intra-process can't handle serialized messages");
   }
 
+  #ifdef INTERNEURON
+  template<class T>
+  typename std::enable_if<!std::is_same<T, rcl_serialized_message_t>::value, void>::type
+  execute_impl(std::shared_ptr<void> & data)
+  {
+    if (!data) {
+      return;
+    }
+
+
+    auto shared_ptr = std::static_pointer_cast<std::tuple<ConstMessageSharedPtr, MessageUniquePtr,std::unique_ptr<rclcpp::MessageInfo>>>(
+      data);
+
+    auto msg_info = *(std::get<2>(*shared_ptr));
+    msg_info.get_rmw_message_info().received_timestamp = static_cast<int64_t>(ros_clock.now().nanoseconds());
+    if (any_callback_.use_take_shared_method()) {
+      ConstMessageSharedPtr shared_msg = std::get<0>(*shared_ptr);
+      any_callback_.dispatch_intra_process(shared_msg, msg_info);
+    } else {
+      MessageUniquePtr unique_msg = std::move(std::get<1>(*shared_ptr));
+      any_callback_.dispatch_intra_process(std::move(unique_msg), msg_info);
+    }
+    shared_ptr.reset();
+  }
+  #else
+
   template<class T>
   typename std::enable_if<!std::is_same<T, rcl_serialized_message_t>::value, void>::type
   execute_impl(std::shared_ptr<void> & data)
@@ -157,9 +213,6 @@ protected:
     rmw_message_info_t msg_info;
     msg_info.publisher_gid = {0, {0}};
     msg_info.from_intra_process = true;
-    #ifdef INTERNEURON
-    msg_info.received_timestamp = static_cast<int64_t>(ros_clock.now().nanoseconds());
-    #endif
 
     auto shared_ptr = std::static_pointer_cast<std::pair<ConstMessageSharedPtr, MessageUniquePtr>>(
       data);
@@ -173,6 +226,7 @@ protected:
     }
     shared_ptr.reset();
   }
+  #endif
 
   AnySubscriptionCallback<MessageT, Alloc> any_callback_;
 };

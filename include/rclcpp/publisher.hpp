@@ -366,6 +366,7 @@ public:
   }
 
   #endif
+  // we dont support TypeAdapter in interneuron now, but it is easy to add it
 
   /// Publish a message on the topic.
   /**
@@ -511,6 +512,7 @@ public:
 
 protected:
 #ifdef INTERNEURON
+//todo
 #endif
   void
   do_inter_process_publish(const ROSMessageType & msg)
@@ -665,7 +667,7 @@ void
 
   std::shared_ptr<const ROSMessageType>
   do_intra_process_ros_message_publish_and_return_shared(
-    std::unique_ptr<ROSMessageType, ROSMessageTypeDeleter> msg,std::shared_ptr<rclcpp::MessageInfo> message_info)
+    std::unique_ptr<ROSMessageType, ROSMessageTypeDeleter> msg,std::unique_ptr<rclcpp::MessageInfo> message_info)
   {
     auto ipm = weak_ipm_.lock();
     if (!ipm) {
@@ -681,7 +683,7 @@ void
       intra_process_publisher_id_,
       std::move(msg),
       ros_message_type_allocator_,
-      message_info);
+      std::move(message_info));
   }
 #endif
   /// Return a new unique_ptr using the ROSMessageType of the publisher.
