@@ -2,7 +2,7 @@
  * @Description: 
  * @Author: Sauron
  * @Date: 2023-05-16 17:07:07
- * @LastEditTime: 2023-05-30 17:29:35
+ * @LastEditTime: 2023-06-01 11:11:33
  * @LastEditors: Sauron
  */
 // Copyright 2020 Open Source Robotics Foundation, Inc.
@@ -26,6 +26,9 @@
 
 #include "rclcpp/visibility_control.hpp"
 
+#ifdef INTERNEURON
+#include "interneuron_lib/time_point_manager.hpp"
+#endif
 namespace rclcpp
 {
 
@@ -53,7 +56,7 @@ public:
   rmw_message_info_t &
   get_rmw_message_info();
 
-#ifdef INTERNETRON
+#ifdef INTERNEURON
   uint64_t get_start_time();
 
   uint64_t get_remain_time();
@@ -67,7 +70,7 @@ private:
   rmw_message_info_t rmw_message_info_;
   #ifdef INTERNEURON
   // todo, should at least be a map that contains different sensors
-  uint64_t start_time_;
+  uint64_t last_sample_time_;
   uint64_t remain_time_;
   #endif
 };

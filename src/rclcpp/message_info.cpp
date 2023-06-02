@@ -2,7 +2,7 @@
  * @Description: 
  * @Author: Sauron
  * @Date: 2023-05-16 17:07:07
- * @LastEditTime: 2023-05-23 17:28:38
+ * @LastEditTime: 2023-06-02 15:11:41
  * @LastEditors: Sauron
  */
 // Copyright 2020 Open Source Robotics Foundation, Inc.
@@ -69,6 +69,7 @@ namespace rclcpp
   {
     remain_time_ = remain_time;
   }
+
 #endif
 
 } // namespace rclcpp

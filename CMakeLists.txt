@@ -121,6 +121,7 @@ set(${PROJECT_NAME}_SRCS
 )
 
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
+find_package(interneuron_lib REQUIRED)
 
 # "watch" template for changes
 configure_file(
@@ -214,6 +215,7 @@ ament_target_dependencies(${PROJECT_NAME}
   "rosidl_runtime_cpp"
   "statistics_msgs"
   "tracetools"
+  "interneuron_lib"
 )
 
 # Causes the visibility macros to use dllexport rather than dllimport,
