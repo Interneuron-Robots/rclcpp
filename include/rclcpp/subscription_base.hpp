@@ -70,7 +70,13 @@ public:
 #ifdef PICAS
   int callback_priority = 0;
 #endif
-
+  #ifdef INTERNEURON
+  std::string key_tp_;
+  RCLCPP_PUBLIC
+  std::string get_key_tp() const{
+    return key_tp_;
+  };
+  #endif
   /// Constructor.
   /**
    * This accepts rcl_subscription_options_t instead of rclcpp::SubscriptionOptions because
@@ -571,6 +577,7 @@ protected:
   bool use_intra_process_;
   IntraProcessManagerWeakPtr weak_ipm_;
   uint64_t intra_process_subscription_id_;
+
   std::shared_ptr<rclcpp::experimental::SubscriptionIntraProcessBase> subscription_intra_process_;
 
 private:

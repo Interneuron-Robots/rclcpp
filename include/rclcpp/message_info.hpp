@@ -2,7 +2,7 @@
  * @Description: 
  * @Author: Sauron
  * @Date: 2023-05-16 17:07:07
- * @LastEditTime: 2023-06-01 11:11:33
+ * @LastEditTime: 2023-06-19 21:09:21
  * @LastEditors: Sauron
  */
 // Copyright 2020 Open Source Robotics Foundation, Inc.
@@ -56,23 +56,16 @@ public:
   rmw_message_info_t &
   get_rmw_message_info();
 
-#ifdef INTERNEURON
-  uint64_t get_start_time();
-
-  uint64_t get_remain_time();
-
-  void set_start_time(uint64_t start_time);
-
-  void set_remain_time(uint64_t remain_time);
+  #ifdef INTERNEURON
+  // todo, should at least be a map that contains different sensors, but if all the sensors are triggered at the same time, it is OK.
+  // they dont need to be updated during the pipeline if no map is used
+  uint64_t this_sample_time_;
+  uint64_t last_sample_time_;
+  uint64_t remain_time_;// with the reference time in timepoint and remain_time in message_info, you can know the deadline
   #endif
 
 private:
   rmw_message_info_t rmw_message_info_;
-  #ifdef INTERNEURON
-  // todo, should at least be a map that contains different sensors
-  uint64_t last_sample_time_;
-  uint64_t remain_time_;
-  #endif
 };
 
 }  // namespace rclcpp

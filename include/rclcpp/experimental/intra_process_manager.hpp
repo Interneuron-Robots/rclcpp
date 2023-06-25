@@ -350,6 +350,7 @@ public:
     }
     const auto & sub_ids = publisher_it->second;
 
+    //todo, maybe I should add info to the message_info to split different sub
     if (sub_ids.take_ownership_subscriptions.empty()) {
       // None of the buffers require ownership, so we promote the pointer
       std::shared_ptr<MessageT> msg = std::move(message);

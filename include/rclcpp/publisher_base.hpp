@@ -64,6 +64,7 @@ class PublisherBase : public std::enable_shared_from_this<PublisherBase>
 public:
   RCLCPP_SMART_PTR_DEFINITIONS(PublisherBase)
 
+  
   /// Default constructor.
   /**
    * Typically, a publisher is not created through this method, but instead is created through a
@@ -208,6 +209,14 @@ public:
   std::vector<rclcpp::NetworkFlowEndpoint>
   get_network_flow_endpoints() const;
 
+  #ifdef INTERNEURON
+  std::string key_tp_;
+
+  RCLCPP_PUBLIC
+  std::string get_key_tp() const{
+    return key_tp_;
+  };
+  #endif
   /// Wait until all published messages are acknowledged or until the specified timeout elapses.
   /**
    * This method waits until all published messages are acknowledged by all matching

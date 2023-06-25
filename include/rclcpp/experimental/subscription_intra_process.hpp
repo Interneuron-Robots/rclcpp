@@ -190,7 +190,7 @@ protected:
       data);
 
     auto msg_info = *(std::get<2>(*shared_ptr));
-    msg_info.get_rmw_message_info().received_timestamp = static_cast<int64_t>(ros_clock.now().nanoseconds());
+    //msg_info.get_rmw_message_info().received_timestamp = static_cast<int64_t>(ros_clock.now().nanoseconds());
     if (any_callback_.use_take_shared_method()) {
       ConstMessageSharedPtr shared_msg = std::get<0>(*shared_ptr);
       any_callback_.dispatch_intra_process(shared_msg, msg_info);

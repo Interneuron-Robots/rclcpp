@@ -2,7 +2,7 @@
  * @Description: 
  * @Author: Sauron
  * @Date: 2023-05-16 17:07:07
- * @LastEditTime: 2023-06-02 15:11:41
+ * @LastEditTime: 2023-06-19 16:17:39
  * @LastEditors: Sauron
  */
 // Copyright 2020 Open Source Robotics Foundation, Inc.
@@ -44,32 +44,5 @@ namespace rclcpp
   {
     return rmw_message_info_;
   }
-
-#ifdef INTERNEURON
-  uint64_t
-  MessageInfo::get_start_time()
-  {
-    return start_time_;
-  }
-
-  uint64_t
-  MessageInfo::get_remain_time()
-  {
-    return remain_time_;
-  }
-
-  void
-  MessageInfo::set_start_time(uint64_t start_time)
-  {
-    start_time_ = start_time;
-  }
-
-  void
-  MessageInfo::set_remain_time(uint64_t remain_time)
-  {
-    remain_time_ = remain_time;
-  }
-
-#endif
 
 } // namespace rclcpp
