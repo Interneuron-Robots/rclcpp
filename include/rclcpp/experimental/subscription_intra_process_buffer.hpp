@@ -19,6 +19,7 @@
 #include <string>
 #include <stdexcept>
 #include <utility>
+#include <sys/time.h>
 
 #include "rcl/error_handling.h"
 #include "rcl/guard_condition.h"
@@ -33,6 +34,7 @@
 
 #ifdef INTERNEURON
 #include "rclcpp/message_info.hpp"
+#include "interneuron_lib/time_point_manager.hpp"
 #endif
 
 namespace rclcpp
@@ -164,8 +166,17 @@ public:
   #ifdef INTERNEURON
   using MessageInfoUniquePtr = std::unique_ptr<rclcpp::MessageInfo>;
   void
-  provide_intra_process_message(ConstMessageSharedPtr message, MessageInfoUniquePtr message_info) override
+  provide_intra_process_message(ConstMessageSharedPtr message, MessageInfoUniquePtr message_info, uint64_t id) override
   {
+    auto key_tp = std::to_string(id)+"sub";
+    auto tp = interneuron::TimePointManager::get_instance()->get_time_point(key_tp);
+    timeval ctime;
+    gettimeofday(&ctime, NULL);
+    uint64_t new_time = ctime.tv_sec * 1000000 + ctime.tv_usec - message_info->last_sample_time;
+    tp->lock();
+    todo
+    auto policy = tp->update_reference_time();
+    tp->unluck();
     if constexpr (std::is_same<SubscribedType, ROSMessageType>::value) {
       buffer_->add_shared(std::move(message), std::move(message_info));
       trigger_guard_condition();
@@ -177,7 +188,7 @@ public:
   }
 
   void
-  provide_intra_process_message(MessageUniquePtr message, MessageInfoUniquePtr message_info) override
+  provide_intra_process_message(MessageUniquePtr message, MessageInfoUniquePtr message_info, uint64_t id) override
   {
     if constexpr (std::is_same<SubscribedType, ROSMessageType>::value) {
       buffer_->add_unique(std::move(message), std::move(message_info));
@@ -190,7 +201,7 @@ public:
   }
 
   void
-  provide_intra_process_data(ConstDataSharedPtr message, MessageInfoUniquePtr message_info)
+  provide_intra_process_data(ConstDataSharedPtr message, MessageInfoUniquePtr message_info, uint64_t id)
   {
     buffer_->add_shared(std::move(message), std::move(message_info));
     trigger_guard_condition();
@@ -198,7 +209,7 @@ public:
   }
 
   void
-  provide_intra_process_data(SubscribedTypeUniquePtr message, MessageInfoUniquePtr message_info)
+  provide_intra_process_data(SubscribedTypeUniquePtr message, MessageInfoUniquePtr message_info, uint64_t id)
   {
     buffer_->add_unique(std::move(message), std::move(message_info));
     trigger_guard_condition();
