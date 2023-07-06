@@ -165,18 +165,44 @@ public:
 
   #ifdef INTERNEURON
   using MessageInfoUniquePtr = std::unique_ptr<rclcpp::MessageInfo>;
+
+  inline void update_tp(MessageInfoUniquePtr&message_info, uint64_t id){
+    auto key_tp = std::to_string(id)+"sub";
+    auto tp = interneuron::TimePointManager::getInstance().get_timepoint(key_tp);
+    timeval ctime;
+    gettimeofday(&ctime, NULL);
+    auto now_time = ctime.tv_sec * 1000000 + ctime.tv_usec; 
+
+    tp->lock();
+    for(auto it = tp->reference_times_.begin(); it != tp->reference_times_.end(); it++){
+      uint64_t new_time = now_time - message_info->get_last_sample_time(it->first);
+      #if CMAKE_BUILD_TYPE == DEBUG
+      std::cout<<"before scheduling, for sensor:"<<it->first<<std::endl;
+      #endif
+      switch(tp->update_reference_time(it->first, new_time, message_info->get_remain_time(it->first))){
+        case interneuron::Policy::QualityFirst:
+            std::cout<<"QualityFirst"<<std::endl;
+            break;
+            case interneuron::Policy::SpeedFirst:
+            std::cout<<"SpeedFirst"<<std::endl;
+            break;
+            case interneuron::Policy::Emergency:
+            std::cout<<"Emergency"<<std::endl;
+            break;
+            case interneuron::Policy::Error:
+            std::cout<<"Error"<<std::endl;
+            break;
+            default:
+            std::cout<<"Unknown"<<std::endl;
+      }
+    }
+    tp->unlock();
+  }
+
   void
   provide_intra_process_message(ConstMessageSharedPtr message, MessageInfoUniquePtr message_info, uint64_t id) override
   {
-    auto key_tp = std::to_string(id)+"sub";
-    auto tp = interneuron::TimePointManager::get_instance()->get_time_point(key_tp);
-    timeval ctime;
-    gettimeofday(&ctime, NULL);
-    uint64_t new_time = ctime.tv_sec * 1000000 + ctime.tv_usec - message_info->last_sample_time;
-    tp->lock();
-    todo
-    auto policy = tp->update_reference_time();
-    tp->unluck();
+    update_tp(message_info, id); 
     if constexpr (std::is_same<SubscribedType, ROSMessageType>::value) {
       buffer_->add_shared(std::move(message), std::move(message_info));
       trigger_guard_condition();
@@ -190,6 +216,7 @@ public:
   void
   provide_intra_process_message(MessageUniquePtr message, MessageInfoUniquePtr message_info, uint64_t id) override
   {
+    update_tp(message_info, id); 
     if constexpr (std::is_same<SubscribedType, ROSMessageType>::value) {
       buffer_->add_unique(std::move(message), std::move(message_info));
       trigger_guard_condition();
@@ -203,6 +230,8 @@ public:
   void
   provide_intra_process_data(ConstDataSharedPtr message, MessageInfoUniquePtr message_info, uint64_t id)
   {
+    update_tp(message_info, id);    
+
     buffer_->add_shared(std::move(message), std::move(message_info));
     trigger_guard_condition();
     this->invoke_on_new_message();
@@ -211,6 +240,7 @@ public:
   void
   provide_intra_process_data(SubscribedTypeUniquePtr message, MessageInfoUniquePtr message_info, uint64_t id)
   {
+    update_tp(message_info, id);
     buffer_->add_unique(std::move(message), std::move(message_info));
     trigger_guard_condition();
     this->invoke_on_new_message();

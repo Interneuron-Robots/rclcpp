@@ -2,7 +2,7 @@
  * @Description: 
  * @Author: Sauron
  * @Date: 2023-05-16 17:07:07
- * @LastEditTime: 2023-05-30 17:47:02
+ * @LastEditTime: 2023-07-05 15:59:10
  * @LastEditors: Sauron
  */
 // Copyright 2021 Open Source Robotics Foundation, Inc.
@@ -76,10 +76,10 @@ public:
 
   #ifdef INTERNEURON
   virtual void
-  provide_intra_process_message(ConstMessageSharedPtr message, MessageInfoUniquePtr message_info) = 0;
+  provide_intra_process_message(ConstMessageSharedPtr message, MessageInfoUniquePtr message_info, uint64_t id) = 0;
 
   virtual void
-  provide_intra_process_message(MessageUniquePtr message, MessageInfoUniquePtr message_info) = 0;
+  provide_intra_process_message(MessageUniquePtr message, MessageInfoUniquePtr message_info, uint64_t id) = 0;
   #endif
 };
 

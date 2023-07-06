@@ -778,14 +778,14 @@ private:
       if (subscription != nullptr) {
         if (std::next(it) == subscription_ids.end()) {
           // If this is the last subscription, give up ownership
-          subscription->provide_intra_process_data(std::move(message),std::move(message_info),*id);
+          subscription->provide_intra_process_data(std::move(message),std::move(message_info),*it);
         } else {
           // Copy the message since we have additional subscriptions to serve
           Deleter deleter = message.get_deleter();
           auto ptr = MessageAllocTraits::allocate(allocator, 1);
           MessageAllocTraits::construct(allocator, ptr, *message);
 
-          subscription->provide_intra_process_data(std::move(MessageUniquePtr(ptr, deleter)),std::move(message_info),*id);
+          subscription->provide_intra_process_data(std::move(MessageUniquePtr(ptr, deleter)),std::move(message_info),*it);
         }
 
         continue;
@@ -812,21 +812,22 @@ private:
         allocator::set_allocator_for_deleter(&deleter, &allocator);
         rclcpp::TypeAdapter<MessageT>::convert_to_ros_message(*message, *ptr);
         auto ros_msg = std::unique_ptr<ROSMessageType, ROSMessageTypeDeleter>(ptr, deleter);
-        ros_message_subscription->provide_intra_process_message(std::move(ros_msg),std::make_unique<rclcpp::MessageInfo>(*message_info),*id);
+        ros_message_subscription->provide_intra_process_message(std::move(ros_msg),std::make_unique<rclcpp::MessageInfo>(*message_info),*it);
       } else {
         if constexpr (std::is_same<MessageT, ROSMessageType>::value) {
           if (std::next(it) == subscription_ids.end()) {
             // If this is the last subscription, give up ownership
-            ros_message_subscription->provide_intra_process_message(std::move(message),std::move(message_info),*id);
+            ros_message_subscription->provide_intra_process_message(std::move(message),std::move(message_info),*it);
           } else {
             // Copy the message since we have additional subscriptions to serve
             Deleter deleter = message.get_deleter();
+
             allocator::set_allocator_for_deleter(&deleter, &allocator);
             auto ptr = MessageAllocTraits::allocate(allocator, 1);
             MessageAllocTraits::construct(allocator, ptr, *message);
 
             ros_message_subscription->provide_intra_process_message(
-              std::move(MessageUniquePtr(ptr, deleter)),std::make_unique<rclcpp::MessageInfo>(*message_info),*id);
+              std::move(MessageUniquePtr(ptr, deleter)),std::make_unique<rclcpp::MessageInfo>(*message_info),*it);
           }
         }
       }
