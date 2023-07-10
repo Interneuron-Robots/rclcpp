@@ -176,10 +176,11 @@ public:
     tp->lock();
     for(auto it = tp->reference_times_.begin(); it != tp->reference_times_.end(); it++){
       uint64_t new_time = now_time - message_info->get_last_sample_time(it->first);
-      #if CMAKE_BUILD_TYPE == DEBUG
+      auto policy = tp->update_reference_time(it->first, new_time, message_info->get_remain_time(it->first));
+    tp->unlock();
+      #ifdef PRINT_DEBUG
       std::cout<<"before scheduling, for sensor:"<<it->first<<std::endl;
-      #endif
-      switch(tp->update_reference_time(it->first, new_time, message_info->get_remain_time(it->first))){
+      switch(policy){
         case interneuron::Policy::QualityFirst:
             std::cout<<"QualityFirst"<<std::endl;
             break;
@@ -196,7 +197,7 @@ public:
             std::cout<<"Unknown"<<std::endl;
       }
     }
-    tp->unlock();
+      #endif
   }
 
   void

@@ -2,7 +2,7 @@
  * @Description: 
  * @Author: Sauron
  * @Date: 2023-05-16 17:07:07
- * @LastEditTime: 2023-07-05 18:09:45
+ * @LastEditTime: 2023-07-08 11:47:32
  * @LastEditors: Sauron
  */
 // Copyright 2020 Open Source Robotics Foundation, Inc.
@@ -20,6 +20,7 @@
 // limitations under the License.
 
 #include "rclcpp/message_info.hpp"
+#include <cassert>
 
 namespace rclcpp
 {
@@ -46,7 +47,7 @@ namespace rclcpp
   }
 
 #ifdef INTERNEURON
-  void MessageInfo::set_tp_info(std::string sensor_name, uint64_t this_sample_time, uint64_t last_sample_time, uint64_t remain_time){
+  void MessageInfo::update_TP_Info(std::string sensor_name, uint64_t this_sample_time, uint64_t last_sample_time, uint64_t remain_time){
     auto tp_info = this->tp_infos_.find(sensor_name);
     if (tp_info == this->tp_infos_.end()){
       this->tp_infos_.insert(std::make_pair(sensor_name, TP_Info(this_sample_time, last_sample_time, remain_time)));
@@ -57,27 +58,29 @@ namespace rclcpp
       tp_info->second.remain_time_ = remain_time;
     }
   }
-  uint64_t MessageInfo::get_last_sample_time(std::string sensor_name) const{
-    auto tp_info = this->tp_infos_.find(sensor_name);
-    if (tp_info == this->tp_infos_.end()){
-      #if CMAKE_BUILD_TYPE == DEBUG
-			std::cout<<"[ERROR][MessageInfo::get_last_sample_time] cannot find: "<<sensor_name<<"in the message_info"<<std::endl;
-			#endif
-      return 0;
+
+  void MessageInfo::updateTP_Info(std::string sensor_name, interneuron::TP_Info tp_info){
+    auto tp_info_ = this->tp_infos_.find(sensor_name);
+    if (tp_info_ == this->tp_infos_.end()){
+      this->tp_infos_.insert(std::make_pair(sensor_name, tp_info));
     }
-    return tp_info->second.last_sample_time_;
+    else{
+      tp_info_->second = tp_info;
+    }
   }
 
-  uint64_t MessageInfo::get_remain_time(std::string sensor_name)const{
+  interneuron::TP_Info get_TP_Info(std::string sensor_name){
     auto tp_info = this->tp_infos_.find(sensor_name);
     if (tp_info == this->tp_infos_.end()){
-      #if CMAKE_BUILD_TYPE == DEBUG
-			std::cout<<"[ERROR][MessageInfo::get_remain_time] cannot find: "<<sensor_name<<"in the message_info"<<std::endl;
-			#endif
-      return 0;
+      #ifdef PRINT_DEBUG
+      std::cout<<"[ERROR][MessageInfo::get_TP_Info] cannot find: "<<sensor_name<<"in the message_info"<<std::endl;
+      #endif
+      assert(false);
+      return nullptr;
     }
-    return tp_info->second.remain_time_;
+    return tp_info->second;
   }
+
 #endif
 
 } // namespace rclcpp
