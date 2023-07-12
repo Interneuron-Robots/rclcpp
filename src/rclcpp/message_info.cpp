@@ -2,7 +2,7 @@
  * @Description: 
  * @Author: Sauron
  * @Date: 2023-05-16 17:07:07
- * @LastEditTime: 2023-07-08 11:47:32
+ * @LastEditTime: 2023-07-11 17:26:30
  * @LastEditors: Sauron
  */
 // Copyright 2020 Open Source Robotics Foundation, Inc.
@@ -69,7 +69,7 @@ namespace rclcpp
     }
   }
 
-  interneuron::TP_Info get_TP_Info(std::string sensor_name){
+  interneuron::TP_Info& get_TP_Info(std::string sensor_name){
     auto tp_info = this->tp_infos_.find(sensor_name);
     if (tp_info == this->tp_infos_.end()){
       #ifdef PRINT_DEBUG
