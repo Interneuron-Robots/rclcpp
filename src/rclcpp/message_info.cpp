@@ -2,7 +2,7 @@
  * @Description: 
  * @Author: Sauron
  * @Date: 2023-05-16 17:07:07
- * @LastEditTime: 2023-07-11 17:26:30
+ * @LastEditTime: 2023-07-12 15:24:33
  * @LastEditors: Sauron
  */
 // Copyright 2020 Open Source Robotics Foundation, Inc.
@@ -47,10 +47,16 @@ namespace rclcpp
   }
 
 #ifdef INTERNEURON
+MessageInfo::MessageInfo(const std::vector<std::string>&sensor_names){
+  for(auto&sensor_name:sensor_names){
+    this->tp_infos_.insert(std::make_pair(sensor_name, interneuron::TP_Info()));
+  }
+}
+
   void MessageInfo::update_TP_Info(std::string sensor_name, uint64_t this_sample_time, uint64_t last_sample_time, uint64_t remain_time){
     auto tp_info = this->tp_infos_.find(sensor_name);
     if (tp_info == this->tp_infos_.end()){
-      this->tp_infos_.insert(std::make_pair(sensor_name, TP_Info(this_sample_time, last_sample_time, remain_time)));
+      this->tp_infos_.insert(std::make_pair(sensor_name, interneuron::TP_Info(this_sample_time, last_sample_time, remain_time)));
     }
     else{
       tp_info->second.this_sample_time_ = this_sample_time;
@@ -59,7 +65,7 @@ namespace rclcpp
     }
   }
 
-  void MessageInfo::updateTP_Info(std::string sensor_name, interneuron::TP_Info tp_info){
+  void MessageInfo::update_TP_Info(std::string sensor_name, interneuron::TP_Info tp_info){
     auto tp_info_ = this->tp_infos_.find(sensor_name);
     if (tp_info_ == this->tp_infos_.end()){
       this->tp_infos_.insert(std::make_pair(sensor_name, tp_info));
@@ -69,14 +75,13 @@ namespace rclcpp
     }
   }
 
-  interneuron::TP_Info& get_TP_Info(std::string sensor_name){
+  interneuron::TP_Info& MessageInfo::get_TP_Info(std::string sensor_name){
     auto tp_info = this->tp_infos_.find(sensor_name);
     if (tp_info == this->tp_infos_.end()){
       #ifdef PRINT_DEBUG
       std::cout<<"[ERROR][MessageInfo::get_TP_Info] cannot find: "<<sensor_name<<"in the message_info"<<std::endl;
       #endif
       assert(false);
-      return nullptr;
     }
     return tp_info->second;
   }

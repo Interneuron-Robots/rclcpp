@@ -2,7 +2,7 @@
  * @Description: 
  * @Author: Sauron
  * @Date: 2023-05-16 17:07:07
- * @LastEditTime: 2023-07-08 11:33:59
+ * @LastEditTime: 2023-07-12 15:22:21
  * @LastEditors: Sauron
  */
 // Copyright 2020 Open Source Robotics Foundation, Inc.
@@ -28,9 +28,7 @@
 
 #ifdef INTERNEURON
 #include "interneuron_lib/time_point.hpp"
-#include<map>
-#include<string>
-#include<iostream>
+#include<vector>
 #endif
 namespace rclcpp
 {
@@ -60,9 +58,11 @@ public:
 
 
   #ifdef INTERNEURON
+MessageInfo(const std::vector<std::string>&sensor_names);
+
   void update_TP_Info(std::string sensor_name, uint64_t this_sample_time, uint64_t last_sample_time, uint64_t remain_time);
   void update_TP_Info(std::string sensor_name, interneuron::TP_Info tp_info);
-  interneuron::TP_Info get_TP_Info(std::string sensor_name);
+  interneuron::TP_Info& get_TP_Info(std::string sensor_name);
 
   std::map<std::string, interneuron::TP_Info> tp_infos_;//key is the sensor name
    #endif

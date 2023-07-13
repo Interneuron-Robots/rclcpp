@@ -41,7 +41,10 @@ endif()
 
 # INTERNEURON feature
 if(${INTERNEURON})
-  add_compile_options(-DINTERNEURON)
+  add_compile_options(-DINTERNEURON -w)#-w to disable warnings
+endif()
+if(${PRINT_DEBUG})
+  add_compile_options(-DPRINT_DEBUG)#-w to disable warnings
 endif()
 
 set(${PROJECT_NAME}_SRCS
