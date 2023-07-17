@@ -232,9 +232,6 @@ public:
   : parent_handle_(parent_handle), event_callback_(callback)
   {
     event_handle_ = rcl_get_zero_initialized_event();
-    if(parent_handle == NULL) {
-      assert(false);
-    }
     rcl_ret_t ret = init_func(&event_handle_, parent_handle.get(), event_type);
     if (ret != RCL_RET_OK) {
       if (ret == RCL_RET_UNSUPPORTED) {

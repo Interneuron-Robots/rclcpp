@@ -2,7 +2,7 @@
  * @Description: 
  * @Author: Sauron
  * @Date: 2023-05-16 17:07:07
- * @LastEditTime: 2023-07-12 15:22:21
+ * @LastEditTime: 2023-07-16 13:33:56
  * @LastEditors: Sauron
  */
 // Copyright 2020 Open Source Robotics Foundation, Inc.
@@ -65,7 +65,8 @@ MessageInfo(const std::vector<std::string>&sensor_names);
   interneuron::TP_Info& get_TP_Info(std::string sensor_name);
 
   std::map<std::string, interneuron::TP_Info> tp_infos_;//key is the sensor name
-   #endif
+
+  #endif
 
 private:
   rmw_message_info_t rmw_message_info_;

@@ -329,9 +329,6 @@ protected:
     const EventCallbackT & callback,
     const rcl_publisher_event_type_t event_type)
   {
-    if(publisher_handle_ == nullptr) {
-      assert(false);
-    }
     auto handler = std::make_shared<QOSEventHandler<EventCallbackT,
         std::shared_ptr<rcl_publisher_t>>>(
       callback,
