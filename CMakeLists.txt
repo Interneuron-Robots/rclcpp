@@ -218,8 +218,8 @@ ament_target_dependencies(${PROJECT_NAME}
   "rosidl_runtime_cpp"
   "statistics_msgs"
   "tracetools"
-  "interneuron_lib"
 )
+target_link_libraries(${PROJECT_NAME} interneuron_lib)
 
 # Causes the visibility macros to use dllexport rather than dllimport,
 # which is appropriate when building the dll but not consuming it.
