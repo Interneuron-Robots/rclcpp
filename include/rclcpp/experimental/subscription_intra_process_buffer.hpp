@@ -167,7 +167,7 @@ public:
   using MessageInfoUniquePtr = std::unique_ptr<rclcpp::MessageInfo>;
 
   inline interneuron::Policy update_tp(MessageInfoUniquePtr&message_info, uint64_t id){
-    return (std::static_pointer_cast<interneuron::MiddleTimePoint>(interneuron::TimePointManager::getInstance().get_timepoint(std::to_string(id)+"sub", interneuron::TimePointType::Middle)))->update_reference_times(message_info->tp_infos_);
+    return (std::static_pointer_cast<interneuron::MiddleTimePoint>(interneuron::TimePointManager::getInstance().get_timepoint(std::to_string(id)+"_sub", interneuron::TimePointType::Middle)))->update_reference_times(message_info->tp_infos_);
   }
 
   void
