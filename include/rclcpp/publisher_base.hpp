@@ -210,7 +210,6 @@ public:
   get_network_flow_endpoints() const;
 
   #ifdef INTERNEURON
-  std::string key_tp_;
 
   RCLCPP_PUBLIC
   std::string get_key_tp() const{
@@ -357,6 +356,9 @@ protected:
   rmw_gid_t rmw_gid_;
 
   const rosidl_message_type_support_t type_support_;
+  #ifdef INTERNEURON
+  std::string key_tp_;
+  #endif
 };
 
 }  // namespace rclcpp

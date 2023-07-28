@@ -71,7 +71,6 @@ public:
   int callback_priority = 0;
 #endif
   #ifdef INTERNEURON
-  std::string key_tp_;
   RCLCPP_PUBLIC
   std::string get_key_tp() const{
     return key_tp_;
@@ -593,6 +592,9 @@ private:
 
   std::recursive_mutex callback_mutex_;
   std::function<void(size_t)> on_new_message_callback_{nullptr};
+  #ifdef INTERNEURON
+  std::string key_tp_;
+  #endif
 };
 
 }  // namespace rclcpp

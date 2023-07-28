@@ -45,12 +45,11 @@ template<typename BufferT>
 class RingBufferImplementation : public BufferImplementationBase<BufferT>
 {
 public:
+#ifdef INTERNEURON
   explicit RingBufferImplementation(size_t capacity)
   : capacity_(capacity),
     ring_buffer_(capacity),
-    #ifdef INTERNEURON
     message_info_buffer_(capacity),
-    #endif
     write_index_(capacity_ - 1),
     read_index_(0),
     size_(0)
@@ -59,6 +58,19 @@ public:
       throw std::invalid_argument("capacity must be a positive, non-zero value");
     }
   }
+  #else
+explicit RingBufferImplementation(size_t capacity)
+  : capacity_(capacity),
+    ring_buffer_(capacity),
+    write_index_(capacity_ - 1),
+    read_index_(0),
+    size_(0)
+  {
+    if (capacity == 0) {
+      throw std::invalid_argument("capacity must be a positive, non-zero value");
+    }
+  }
+  #endif
 
   virtual ~RingBufferImplementation() {}
 
