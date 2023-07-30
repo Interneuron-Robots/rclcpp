@@ -71,6 +71,7 @@ public:
   int callback_priority = 0;
 #endif
   #ifdef INTERNEURON
+  std::string key_tp_;
   RCLCPP_PUBLIC
   std::string get_key_tp() const{
     return key_tp_;
@@ -587,14 +588,12 @@ private:
 
   std::atomic<bool> subscription_in_use_by_wait_set_{false};
   std::atomic<bool> intra_process_subscription_waitable_in_use_by_wait_set_{false};
+
   std::unordered_map<rclcpp::QOSEventHandlerBase *,
     std::atomic<bool>> qos_events_in_use_by_wait_set_;
-
   std::recursive_mutex callback_mutex_;
   std::function<void(size_t)> on_new_message_callback_{nullptr};
-  #ifdef INTERNEURON
-  std::string key_tp_;
-  #endif
+  
 };
 
 }  // namespace rclcpp

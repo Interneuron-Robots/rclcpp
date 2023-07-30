@@ -210,12 +210,10 @@ public:
   get_network_flow_endpoints() const;
 
   #ifdef INTERNEURON
-
+  std::string key_tp_;
   RCLCPP_PUBLIC
-  std::string get_key_tp() const{
-    return key_tp_;
-  };
-  #endif
+  std::string get_key_tp() const;
+    #endif
   /// Wait until all published messages are acknowledged or until the specified timeout elapses.
   /**
    * This method waits until all published messages are acknowledged by all matching
@@ -245,7 +243,6 @@ public:
     std::chrono::duration<DurationRepT, DurationT>(-1)) const
   {
     rcl_duration_value_t rcl_timeout = rcpputils::convert_to_nanoseconds(timeout).count();
-
     rcl_ret_t ret = rcl_publisher_wait_for_all_acked(publisher_handle_.get(), rcl_timeout);
     if (ret == RCL_RET_OK) {
       return true;
@@ -339,14 +336,14 @@ protected:
 
   RCLCPP_PUBLIC
   void default_incompatible_qos_callback(QOSOfferedIncompatibleQoSInfo & info) const;
-
   std::shared_ptr<rcl_node_t> rcl_node_handle_;
 
   std::shared_ptr<rcl_publisher_t> publisher_handle_;
 
-  std::unordered_map<rcl_publisher_event_type_t,
+std::unordered_map<rcl_publisher_event_type_t,
     std::shared_ptr<rclcpp::QOSEventHandlerBase>> event_handlers_;
 
+  
   using IntraProcessManagerWeakPtr =
     std::weak_ptr<rclcpp::experimental::IntraProcessManager>;
   bool intra_process_is_enabled_;
@@ -356,9 +353,7 @@ protected:
   rmw_gid_t rmw_gid_;
 
   const rosidl_message_type_support_t type_support_;
-  #ifdef INTERNEURON
-  std::string key_tp_;
-  #endif
+ 
 };
 
 }  // namespace rclcpp

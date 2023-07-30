@@ -169,6 +169,13 @@ PublisherBase::get_event_handlers() const
   return event_handlers_;
 }
 
+#ifdef INTERNEURON
+std::string PublisherBase::get_key_tp() const
+  {
+    return key_tp_;
+  };
+  #endif
+
 size_t
 PublisherBase::get_subscription_count() const
 {
