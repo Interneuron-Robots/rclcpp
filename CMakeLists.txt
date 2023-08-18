@@ -39,7 +39,7 @@ if(${PICAS})
   add_compile_options(-DPICAS)
 endif()
 
-set(CMAKE_CXX_FLAGS_DEBUG "-g -O0")
+#set(CMAKE_CXX_FLAGS_DEBUG "-g -O0")
 
 # INTERNEURON feature
 if(${INTERNEURON})

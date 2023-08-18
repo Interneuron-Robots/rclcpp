@@ -727,9 +727,9 @@ Executor::wait_for_work(std::chrono::nanoseconds timeout)
     // Collect the subscriptions and timers to be waited on
     memory_strategy_->clear_handles();
     bool has_invalid_weak_groups_or_nodes =
-      memory_strategy_->collect_entities(weak_groups_to_nodes_);
+      memory_strategy_->collect_entities(weak_groups_to_nodes_);// all the available groups' callbacks are stored in memory_strategy_
 
-    if (has_invalid_weak_groups_or_nodes) {
+    if (has_invalid_weak_groups_or_nodes) {//remove invalid callbacks
       std::vector<rclcpp::CallbackGroup::WeakPtr> invalid_group_ptrs;
       for (auto pair : weak_groups_to_nodes_) {
         auto weak_group_ptr = pair.first;
@@ -866,6 +866,7 @@ Executor::get_next_ready_executable_from_map(
 {
   TRACEPOINT(rclcpp_executor_get_next_ready);
   bool success = false;
+  std::lock_guard<std::mutex> guard{mutex_};
   #ifdef PICAS
   // PiCAS
   if (callback_priority_enabled) {
@@ -916,7 +917,6 @@ Executor::get_next_ready_executable_from_map(
     if (highest_priority >= 0) success = true;
   } else {
 #endif
-  std::lock_guard<std::mutex> guard{mutex_};
   // Check the timers to see if there are any that are ready
   memory_strategy_->get_next_timer(any_executable, weak_groups_to_nodes);
   if (any_executable.timer) {
@@ -983,7 +983,7 @@ Executor::get_next_ready_executable_from_map(
 }
 
 bool
-Executor::get_next_executable(AnyExecutable & any_executable, std::chrono::nanoseconds timeout)
+Executor::get_next_executable(AnyExecutable & any_executable, std::chrono::nanoseconds timeout)//default timeout=-1
 {
   bool success = false;
   // Check to see if there are any subscriptions or timers needing service

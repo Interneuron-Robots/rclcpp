@@ -1,19 +1,5 @@
-// Copyright 2019 Open Source Robotics Foundation, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-#ifndef RCLCPP__EXPERIMENTAL__SUBSCRIPTION_INTRA_PROCESS_HPP_
-#define RCLCPP__EXPERIMENTAL__SUBSCRIPTION_INTRA_PROCESS_HPP_
+#ifndef RCLCPP__EXPERIMENTAL__SUBSCRIPTION_SYNC_HPP_
+#define RCLCPP__EXPERIMENTAL__SUBSCRIPTION_SYNC_HPP_
 
 #include <rmw/types.h>
 
@@ -48,7 +34,7 @@ template<
   typename ROSMessageType = SubscribedType,
   typename Alloc = std::allocator<void>
 >
-class SubscriptionIntraProcess
+class SubscriptionSync
   : public SubscriptionIntraProcessBuffer<
     SubscribedType,
     SubscribedTypeAlloc,
@@ -64,7 +50,7 @@ class SubscriptionIntraProcess
   >;
 
 public:
-  RCLCPP_SMART_PTR_DEFINITIONS(SubscriptionIntraProcess)
+  RCLCPP_SMART_PTR_DEFINITIONS(SubscriptionSync)
 
   using MessageAllocTraits =
     typename SubscriptionIntraProcessBufferT::SubscribedTypeAllocatorTraits;
@@ -73,11 +59,9 @@ public:
   using MessageUniquePtr = typename SubscriptionIntraProcessBufferT::SubscribedTypeUniquePtr;
   using BufferUniquePtr = typename SubscriptionIntraProcessBufferT::BufferUniquePtr;
 
-  #ifdef INTERNEURON
   rclcpp::Clock ros_clock;
-  #endif
 
-  SubscriptionIntraProcess(
+  SubscriptionSync(
     AnySubscriptionCallback<MessageT, Alloc> callback,
     std::shared_ptr<Alloc> allocator,
     rclcpp::Context::SharedPtr context,
@@ -106,10 +90,9 @@ public:
 #endif
   }
 
-  virtual ~SubscriptionIntraProcess() = default;
+  virtual ~SubscriptionSync() = default;
 
   
-  #ifdef INTERNEURON
   std::shared_ptr<void>
   take_data() override
   {
@@ -119,12 +102,12 @@ public:
 
     if (any_callback_.use_take_shared_method()) {
       std::tie(shared_msg, message_info) = this->buffer_->consume_shared_with_message_info();
-      if (!shared_msg) {
+      if (!shared_msg || !message_info) {
         return nullptr;
       }
     } else {
       std::tie(unique_msg, message_info) = this->buffer_->consume_unique_with_message_info();
-      if (!unique_msg) {
+      if (!unique_msg || !message_info) {
         return nullptr;
       }
     }
@@ -135,33 +118,7 @@ public:
         std::move(message_info)))
     );
   }
-  #else
-  std::shared_ptr<void>
-  take_data() override
-  {
-    ConstMessageSharedPtr shared_msg;
-    MessageUniquePtr unique_msg;
-
-    if (any_callback_.use_take_shared_method()) {
-      shared_msg = this->buffer_->consume_shared();
-      if (!shared_msg) {
-        return nullptr;
-      }
-    } else {
-      unique_msg = this->buffer_->consume_unique();
-      if (!unique_msg) {
-        return nullptr;
-      }
-    }
-    return std::static_pointer_cast<void>(
-      std::make_shared<std::pair<ConstMessageSharedPtr, MessageUniquePtr>>(
-        std::pair<ConstMessageSharedPtr, MessageUniquePtr>(
-          shared_msg, std::move(unique_msg)))
-    );
-  }
-
-  #endif
-
+  
   void execute(std::shared_ptr<void> & data) override
   {
     execute_impl<SubscribedType>(data);
@@ -176,7 +133,6 @@ protected:
     throw std::runtime_error("Subscription intra-process can't handle serialized messages");
   }
 
-  #ifdef INTERNEURON
   template<class T>
   typename std::enable_if<!std::is_same<T, rcl_serialized_message_t>::value, void>::type
   execute_impl(std::shared_ptr<void> & data)
@@ -188,13 +144,8 @@ protected:
 
     auto shared_ptr = std::static_pointer_cast<std::tuple<ConstMessageSharedPtr, MessageUniquePtr,std::unique_ptr<rclcpp::MessageInfo>>>(
       data);
-    rmw_message_info_t rmw_msg_info;
-    rmw_msg_info.publisher_gid = {0, {0}};
-    rmw_msg_info.from_intra_process = true;
-    auto msg_info = rclcpp::MessageInfo(rmw_msg_info);
-    if(std::get<2>(*shared_ptr) != nullptr){
-      msg_info = *(std::get<2>(*shared_ptr));
-    }
+
+    auto msg_info = *(std::get<2>(*shared_ptr));
     //msg_info.get_rmw_message_info().received_timestamp = static_cast<int64_t>(ros_clock.now().nanoseconds());
     if (any_callback_.use_take_shared_method()) {
       ConstMessageSharedPtr shared_msg = std::get<0>(*shared_ptr);
@@ -205,38 +156,11 @@ protected:
     }
     shared_ptr.reset();
   }
-  #else
-
-  template<class T>
-  typename std::enable_if<!std::is_same<T, rcl_serialized_message_t>::value, void>::type
-  execute_impl(std::shared_ptr<void> & data)
-  {
-    if (!data) {
-      return;
-    }
-
-    rmw_message_info_t msg_info;
-    msg_info.publisher_gid = {0, {0}};
-    msg_info.from_intra_process = true;
-
-    auto shared_ptr = std::static_pointer_cast<std::pair<ConstMessageSharedPtr, MessageUniquePtr>>(
-      data);
-
-    if (any_callback_.use_take_shared_method()) {
-      ConstMessageSharedPtr shared_msg = shared_ptr->first;
-      any_callback_.dispatch_intra_process(shared_msg, msg_info);
-    } else {
-      MessageUniquePtr unique_msg = std::move(shared_ptr->second);
-      any_callback_.dispatch_intra_process(std::move(unique_msg), msg_info);
-    }
-    shared_ptr.reset();
-  }
-  #endif
-
+  
   AnySubscriptionCallback<MessageT, Alloc> any_callback_;
 };
 
 }  // namespace experimental
 }  // namespace rclcpp
 
-#endif  // RCLCPP__EXPERIMENTAL__SUBSCRIPTION_INTRA_PROCESS_HPP_
+#endif 
