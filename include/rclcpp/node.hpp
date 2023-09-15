@@ -227,6 +227,31 @@ public:
     )
   );
 
+#ifdef INTERNEURON
+/*
+template<typename CallbackT>
+  std::shared_ptr<rclcpp::experimental::Synchronizer>
+  create_synchronizer(
+    CallbackT && callback,
+    size_t allowed_time_deviation_ms,
+    std::vector<bool>trigger_channels,
+    std::vector<uint64_t>sub_intra_ids
+  )
+template<
+    typename MessageT,
+    typename CallbackT,
+    typename AllocatorT = std::allocator<void>,
+    typename SubscriptionT = rclcpp::Subscription<MessageT, AllocatorT>,
+    typename SynchronizerT = rclcpp::experimental::Synchronizer<MessageT, CallbackT, AllocatorT>>
+  std::shared_ptr<SynchronizerT>
+  create_synchronizer(
+    CallbackT && callback,
+    size_t allowed_time_deviation_ms,
+    bool*trigger_channels,
+    std::vector<std::shared_ptr<SubscriptionT>> &subs
+  );*/
+#endif
+
   /// Create a timer.
   /**
    * \param[in] period Time interval between triggers of the callback.

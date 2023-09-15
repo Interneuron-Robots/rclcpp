@@ -210,9 +210,8 @@ public:
   get_network_flow_endpoints() const;
 
   #ifdef INTERNEURON
-  std::string key_tp_;
   RCLCPP_PUBLIC
-  std::string get_key_tp() const;
+  uint64_t get_intra_id() const;
     #endif
   /// Wait until all published messages are acknowledged or until the specified timeout elapses.
   /**

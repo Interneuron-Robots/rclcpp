@@ -70,11 +70,11 @@ public:
 #ifdef PICAS
   int callback_priority = 0;
 #endif
+
   #ifdef INTERNEURON
-  std::string key_tp_;
   RCLCPP_PUBLIC
-  std::string get_key_tp() const{
-    return key_tp_;
+  uint64_t get_intra_id() const{
+    return intra_process_subscription_id_;
   };
   #endif
   /// Constructor.

@@ -271,8 +271,41 @@ public:
   bool
   avoid_ros_namespace_conventions() const;
 
+  #ifdef INTERNEURON
+  QoS&
+  reusable(bool reusable);
+
+  bool
+  reusable() const;
+  
+  QoS&
+  for_fusion(bool for_fusion);
+
+  bool
+  for_fusion() const;
+
+  explicit
+  QoS(
+    size_t history_depth,
+    bool for_fusion = false,
+    bool reliable = false,
+    bool reusable = false);
+  
+  #endif
+
 private:
   rmw_qos_profile_t rmw_qos_profile_;
+  #ifdef INTERNEURON
+  //to be used in pure intra-process communication
+  //the length of the buffer is stored in "depth"
+  //whether override is allowed is stored in "reliable"
+
+  //whether the msg in this sub is reusable, notice: only the last msg is reusable 
+  bool reusable_ = false;
+
+  // must be set if you want to use interneuron's fusion approach
+  bool for_fusion_ = false;
+  #endif
 };
 
 /// Check if two QoS profiles are exactly equal in all policy values.

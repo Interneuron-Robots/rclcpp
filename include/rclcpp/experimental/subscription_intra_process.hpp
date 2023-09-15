@@ -122,18 +122,29 @@ public:
       if (!shared_msg) {
         return nullptr;
       }
+  return std::static_pointer_cast<void>(
+      std::make_shared<std::pair<ConstMessageSharedPtr, std::unique_ptr<rclcpp::MessageInfo>>>(
+        std::pair<ConstMessageSharedPtr, std::unique_ptr<rclcpp::MessageInfo>>(
+          shared_msg, std::move(message_info)))
+    );
     } else {
       std::tie(unique_msg, message_info) = this->buffer_->consume_unique_with_message_info();
       if (!unique_msg) {
         return nullptr;
       }
+  return std::static_pointer_cast<void>(
+      std::make_shared<std::pair<MessageUniquePtr, std::unique_ptr<rclcpp::MessageInfo>>>(
+        std::pair<MessageUniquePtr,std::unique_ptr<rclcpp::MessageInfo>>(
+          std::move(unique_msg), std::move(message_info)))
+    );
     }
+    /*
     return std::static_pointer_cast<void>(
       std::make_shared<std::tuple<ConstMessageSharedPtr, MessageUniquePtr, std::unique_ptr<rclcpp::MessageInfo>>>(
         std::tuple<ConstMessageSharedPtr, MessageUniquePtr,std::unique_ptr<rclcpp::MessageInfo>>(
           shared_msg, std::move(unique_msg),
         std::move(message_info)))
-    );
+    );*/
   }
   #else
   std::shared_ptr<void>
@@ -184,26 +195,32 @@ protected:
     if (!data) {
       return;
     }
-
-
-    auto shared_ptr = std::static_pointer_cast<std::tuple<ConstMessageSharedPtr, MessageUniquePtr,std::unique_ptr<rclcpp::MessageInfo>>>(
-      data);
+    
+    if (any_callback_.use_take_shared_method()) {
+    auto shared_ptr = std::static_pointer_cast<std::pair<ConstMessageSharedPtr, std::unique_ptr<rclcpp::MessageInfo>>>(data);
+    if(shared_ptr->second == nullptr){
     rmw_message_info_t rmw_msg_info;
     rmw_msg_info.publisher_gid = {0, {0}};
     rmw_msg_info.from_intra_process = true;
-    auto msg_info = rclcpp::MessageInfo(rmw_msg_info);
-    if(std::get<2>(*shared_ptr) != nullptr){
-      msg_info = *(std::get<2>(*shared_ptr));
-    }
+    any_callback_.dispatch_intra_process(shared_ptr->first, rclcpp::MessageInfo(rmw_msg_info));
+    }else{
     //msg_info.get_rmw_message_info().received_timestamp = static_cast<int64_t>(ros_clock.now().nanoseconds());
-    if (any_callback_.use_take_shared_method()) {
-      ConstMessageSharedPtr shared_msg = std::get<0>(*shared_ptr);
-      any_callback_.dispatch_intra_process(shared_msg, msg_info);
-    } else {
-      MessageUniquePtr unique_msg = std::move(std::get<1>(*shared_ptr));
-      any_callback_.dispatch_intra_process(std::move(unique_msg), msg_info);
+      any_callback_.dispatch_intra_process(shared_ptr->first, *(shared_ptr->second));
     }
     shared_ptr.reset();
+    } else {
+auto shared_ptr = std::static_pointer_cast<std::pair<MessageUniquePtr, std::unique_ptr<rclcpp::MessageInfo>>>(data);
+    if(shared_ptr->second == nullptr){
+    rmw_message_info_t rmw_msg_info;
+    rmw_msg_info.publisher_gid = {0, {0}};
+    rmw_msg_info.from_intra_process = true;
+    any_callback_.dispatch_intra_process(std::move(shared_ptr->first), rclcpp::MessageInfo(rmw_msg_info));
+    }else{
+    //msg_info.get_rmw_message_info().received_timestamp = static_cast<int64_t>(ros_clock.now().nanoseconds());
+      any_callback_.dispatch_intra_process(std::move(shared_ptr->first), *(shared_ptr->second));
+    }
+    shared_ptr.reset();
+    }
   }
   #else
 

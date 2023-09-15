@@ -281,6 +281,45 @@ QoS::avoid_ros_namespace_conventions() const
 {
   return rmw_qos_profile_.avoid_ros_namespace_conventions;
 }
+#ifdef INTERNEURON
+QoS &
+QoS::reusable(bool reusable)
+{
+  reusable_ = reusable;
+  return *this;
+}
+
+bool
+QoS::reusable() const
+{
+  return reusable_;
+}
+
+QoS &
+QoS::for_fusion(bool for_fusion)
+{
+  for_fusion_ = for_fusion;
+  return *this;
+}
+
+bool
+QoS::for_fusion() const
+{
+  return for_fusion_;
+}
+
+QoS::QoS(size_t history_depth, bool for_fusion, bool reliable, bool reusable)
+: QoS(KeepLast(history_depth))
+{
+if(reliable){
+  this->reliability(RMW_QOS_POLICY_RELIABILITY_RELIABLE);
+}else{
+  this->reliability(RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT);
+}
+ for_fusion_ = for_fusion;
+ reusable_ = reusable; 
+}
+#endif
 
 namespace
 {

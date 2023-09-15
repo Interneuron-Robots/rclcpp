@@ -97,11 +97,19 @@ public:
       buffer_type,
       qos_profile,
       std::make_shared<Alloc>(subscribed_type_allocator_));
+
+      #ifdef INTERNEURON
+      for_fusion_ = qos_profile.for_fusion();
+      can_trigger_ = false;//default is false
+      #endif
   }
 
   bool
   is_ready(rcl_wait_set_t * wait_set) override
   {
+    #ifdef INTERNEURON
+    if(for_fusion_)return false;//never call the callback
+    #endif
     (void) wait_set;
     return buffer_->has_data();
   }
@@ -225,16 +233,29 @@ public:
     return buffer_->use_take_shared_method();
   }
 
+  #ifdef INTERNEURON
+  bool can_trigger() const{
+    return can_trigger_;
+  }
+  #endif
+
 protected:
   void
   trigger_guard_condition() override
   {
+    #ifdef INTERNERUON
+    if(!can_trigger_)return;
+    #endif
     this->gc_.trigger();
   }
 
   BufferUniquePtr buffer_;
   SubscribedTypeAllocator subscribed_type_allocator_;
   SubscribedTypeDeleter subscribed_type_deleter_;
+  #ifdef INTERNEURON
+  bool for_fusion_;
+  bool can_trigger_;
+  #endif
 };
 
 }  // namespace experimental

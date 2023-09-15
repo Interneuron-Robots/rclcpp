@@ -105,6 +105,29 @@ Node::create_subscription(
     msg_mem_strat);
 }
 
+#ifdef INTERNEURON
+/*
+template<typename CallbackT>
+  std::shared_ptr<rclcpp::experimental::Synchronizer>
+  create_synchronizer(
+    CallbackT && callback,
+    size_t allowed_time_deviation_ms,
+    std::vector<bool>trigger_channels,
+    std::vector<uint64_t>sub_intra_ids
+  ){
+    //rclcpp::AnySubscriptionCallback<MessageT, AllocatorT> any_subscription_callback();
+  //any_subscription_callback.set(std::forward<CallbackT>(callback));
+    auto syn = std::make_shared<rclcpp::experimental::Synchronizer>(
+      std::forward<CallbackT>(callback),
+      this->get_node_base_interface()->get_context(),
+      allowed_time_deviation_ms,
+      trigger_channels,
+      sub_intra_ids,
+      num_subs
+    );
+  }*/
+#endif
+
 template<typename DurationRepT, typename DurationT, typename CallbackT>
 typename rclcpp::WallTimer<CallbackT>::SharedPtr
 Node::create_wall_timer(

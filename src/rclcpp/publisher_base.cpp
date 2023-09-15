@@ -170,9 +170,9 @@ PublisherBase::get_event_handlers() const
 }
 
 #ifdef INTERNEURON
-std::string PublisherBase::get_key_tp() const
+uint64_t PublisherBase::get_intra_id() const
   {
-    return key_tp_;
+    return intra_process_publisher_id_;
   };
   #endif
 
@@ -270,9 +270,6 @@ PublisherBase::setup_intra_process(
   intra_process_publisher_id_ = intra_process_publisher_id;
   weak_ipm_ = ipm;
   intra_process_is_enabled_ = true;
-  #ifdef INTERNEURON
-  key_tp_ = std::to_string(intra_process_publisher_id);
-  #endif
 }
 
 void

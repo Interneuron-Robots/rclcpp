@@ -222,9 +222,6 @@ SubscriptionBase::setup_intra_process(
   IntraProcessManagerWeakPtr weak_ipm)
 {
   intra_process_subscription_id_ = intra_process_subscription_id;
-  #ifdef INTERNEURON
-  key_tp_ = std::to_string(intra_process_subscription_id);
-  #endif
   weak_ipm_ = weak_ipm;
   use_intra_process_ = true;
 }
