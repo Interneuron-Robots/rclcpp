@@ -228,6 +228,22 @@ public:
   );
 
 #ifdef INTERNEURON
+template<
+  typename MessageT,
+  typename CallbackT,
+  typename AllocatorT = std::allocator<void>,
+  typename SubscribedT = typename rclcpp::TypeAdapter<MessageT>::custom_type,
+  typename ROSMessageT = typename rclcpp::TypeAdapter<MessageT>::ros_message_type,
+  typename SubscriptionT = rclcpp::experimental::SubscriptionIntraProcess<MessageT, SubscribedT>
+  >
+std::shared_ptr<SubscriptionT>
+create_intra_subscription(
+  const std::string & topic_name,
+    const rclcpp::QoS & qos,
+    CallbackT && callback,
+    const SubscriptionOptionsWithAllocator<AllocatorT> & options =
+    SubscriptionOptionsWithAllocator<AllocatorT>()
+    );
 /*
 template<typename CallbackT>
   std::shared_ptr<rclcpp::experimental::Synchronizer>

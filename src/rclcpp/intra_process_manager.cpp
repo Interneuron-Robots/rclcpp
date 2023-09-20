@@ -213,6 +213,8 @@ IntraProcessManager::can_communicate(
   rclcpp::experimental::SubscriptionIntraProcessBase::SharedPtr sub) const
 {
   // publisher and subscription must be on the same topic
+  auto pub_t = pub->get_topic_name();
+  auto sub_t = sub->get_topic_name();
   if (strcmp(pub->get_topic_name(), sub->get_topic_name()) != 0) {
     return false;
   }

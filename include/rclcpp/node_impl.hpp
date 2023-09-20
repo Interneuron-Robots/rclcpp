@@ -49,6 +49,11 @@
 #include "rclcpp/type_support_decl.hpp"
 #include "rclcpp/visibility_control.hpp"
 
+#ifdef INTERNEURON
+#include "rclcpp/detail/resolve_intra_process_buffer_type.hpp"
+#include "rclcpp/any_subscription_callback.hpp"
+#endif
+
 #ifndef RCLCPP__NODE_HPP_
 #include "node.hpp"
 #endif
@@ -106,6 +111,51 @@ Node::create_subscription(
 }
 
 #ifdef INTERNEURON
+template<
+  typename MessageT,
+  typename CallbackT,
+  typename AllocatorT,
+  typename SubscribedT,
+  typename ROSMessageT,
+  typename SubscriptionT
+  >
+std::shared_ptr<SubscriptionT>
+Node::create_intra_subscription(
+  const std::string & topic_name,
+  const rclcpp::QoS & qos,
+  CallbackT && callback,
+  const SubscriptionOptionsWithAllocator<AllocatorT> & options)
+{
+  using SubscribedTypeAllocatorTraits = allocator::AllocRebind<SubscribedT, AllocatorT>;
+  using SubscribedTypeAllocator = typename SubscribedTypeAllocatorTraits::allocator_type;
+  using SubscribedTypeDeleter = allocator::Deleter<SubscribedTypeAllocator, SubscribedT>;
+  auto allocator = options.get_allocator();
+
+  using rclcpp::AnySubscriptionCallback;
+  AnySubscriptionCallback<MessageT, AllocatorT> any_subscription_callback(*allocator);
+  any_subscription_callback.set(std::forward<CallbackT>(callback));
+  
+  auto context = this->get_node_base_interface()->get_context();
+  using SubscriptionIntraProcessT = rclcpp::experimental::SubscriptionIntraProcess<
+        MessageT,
+        SubscribedT,
+        SubscribedTypeAllocator,
+        SubscribedTypeDeleter,
+        ROSMessageT,
+        AllocatorT>;
+        //TODO: qos may need some checks
+  auto subscription_intra_process = std::make_shared<SubscriptionIntraProcessT>(
+        any_subscription_callback,
+        options.get_allocator(),
+        context,
+        extend_name_with_sub_namespace(topic_name, this->get_sub_namespace()),  // important to get like this, as it has the fully-qualified name
+        qos,
+        rclcpp::detail::resolve_intra_process_buffer_type(options.intra_process_buffer_type, any_subscription_callback));
+  auto ipm = context->get_sub_context<rclcpp::experimental::IntraProcessManager>();
+  uint64_t intra_process_subscription_id = ipm->add_subscription(subscription_intra_process);
+  //this->setup_intra_process(intra_process_subscription_id, ipm);
+  return subscription_intra_process;
+}
 /*
 template<typename CallbackT>
   std::shared_ptr<rclcpp::experimental::Synchronizer>

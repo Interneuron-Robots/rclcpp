@@ -572,7 +572,6 @@ protected:
   void
   do_intra_process_publish(std::unique_ptr<PublishedType, PublishedTypeDeleter> msg)
   {
-    std::cout<<"do_intra_process_publish"<<std::endl;
     auto ipm = weak_ipm_.lock();
     if (!ipm) {
       throw std::runtime_error(
@@ -629,7 +628,6 @@ protected:
 void
   do_intra_process_publish(std::unique_ptr<PublishedType, PublishedTypeDeleter> msg,std::unique_ptr<rclcpp::MessageInfo> message_info)
   {
-    std::cout<<"do_intra_process_publish"<<std::endl;
     auto ipm = weak_ipm_.lock();
     if (!ipm) {
       throw std::runtime_error(
