@@ -2,7 +2,7 @@
  * @Description: 
  * @Author: Sauron
  * @Date: 2023-05-16 17:07:07
- * @LastEditTime: 2023-08-16 22:51:45
+ * @LastEditTime: 2023-09-26 11:55:16
  * @LastEditors: Sauron
  */
 // Copyright 2020 Open Source Robotics Foundation, Inc.
@@ -85,6 +85,40 @@ MessageInfo::MessageInfo(const std::vector<std::string>&sensor_names){
     }
     return tp_info->second;
   }
+
+  void MessageInfo::merge_another_message_info(MessageInfo& another_message_info){
+    for(auto& tp_info:another_message_info.tp_infos_){
+      auto tp_info_ = this->tp_infos_.find(tp_info.first);
+      if (tp_info_ == this->tp_infos_.end()){
+        // add tp_infos from other sensors
+        this->tp_infos_.insert(std::make_pair(tp_info.first, tp_info.second));
+      }
+      else{
+        tp_info_->second.last_sample_time = tp_info.second.last_sample_time;
+        tp_info_->second.remain_time = tp_info.second.remain_time;
+      }
+    }
+  }
+
+uint64_t MessageInfo::earliest_this_sample_time(){
+  uint64_t earliest_this_sample_time = 0;
+  for(auto& tp_info:this->tp_infos_){
+    if(tp_info.second.this_sample_time_ < earliest_this_sample_time){
+      earliest_this_sample_time = tp_info.second.this_sample_time_;
+    }
+  }
+  return earliest_this_sample_time;
+}
+
+uint64_t MessageInfo::latest_this_sample_time(){
+  uint64_t latest_this_sample_time = 0;
+  for(auto& tp_info:this->tp_infos_){
+    if(tp_info.second.this_sample_time_ > latest_this_sample_time){
+      latest_this_sample_time = tp_info.second.this_sample_time_;
+    }
+  }
+  return latest_this_sample_time;
+}
 
 #endif
 

@@ -139,14 +139,14 @@ public:
   }
 
   #ifdef INTERNEURON
-  void add_shared(MessageSharedPtr msg, MessageInfoUniquePtr message_info) override
+  bool add_shared(MessageSharedPtr msg, MessageInfoUniquePtr message_info) override
   {
-    add_shared_impl<BufferT>(std::move(msg), std::move(message_info));
+    return add_shared_impl<BufferT>(std::move(msg), std::move(message_info));
   }
 
-  void add_unique(MessageUniquePtr msg,MessageInfoUniquePtr message_info) override
+  bool add_unique(MessageUniquePtr msg,MessageInfoUniquePtr message_info) override
   {
-    buffer_->enqueue(std::move(msg),std::move(message_info));
+    return buffer_->enqueue(std::move(msg),std::move(message_info));
   }
 
   std::pair<MessageSharedPtr, MessageInfoUniquePtr> consume_shared_with_message_info() override
@@ -274,17 +274,19 @@ private:
   // MessageSharedPtr to MessageSharedPtr
   template<typename DestinationT>
   typename std::enable_if<
-    std::is_same<DestinationT, MessageSharedPtr>::value
+    std::is_same<DestinationT, MessageSharedPtr>::value,
+    bool
   >::type
   add_shared_impl(MessageSharedPtr shared_msg, MessageInfoUniquePtr message_info)
   {
-    buffer_->enqueue(std::move(shared_msg),std::move(message_info));
+    return buffer_->enqueue(std::move(shared_msg),std::move(message_info));
   }
 
   // MessageSharedPtr to MessageUniquePtr
   template<typename DestinationT>
   typename std::enable_if<
-    std::is_same<DestinationT, MessageUniquePtr>::value
+    std::is_same<DestinationT, MessageUniquePtr>::value,
+    bool
   >::type
   add_shared_impl(MessageSharedPtr shared_msg, MessageInfoUniquePtr message_info)
   {
@@ -301,7 +303,7 @@ private:
       unique_msg = MessageUniquePtr(ptr);
     }
 
-    buffer_->enqueue(std::move(unique_msg),std::move(message_info));
+    return buffer_->enqueue(std::move(unique_msg),std::move(message_info));
   }
 
 

@@ -122,19 +122,28 @@ explicit RingBufferImplementation(size_t capacity)
    *
    * \param request the element to be stored in the ring buffer
    */
-  void enqueue(BufferT request, std::unique_ptr<rclcpp::MessageInfo>message_info)
+  bool enqueue(BufferT request, std::unique_ptr<rclcpp::MessageInfo> message_info)
   {
     std::lock_guard<std::mutex> lock(mutex_);
 
-    write_index_ = next_(write_index_);
-    ring_buffer_[write_index_] = std::move(request);
-    message_info_buffer_[write_index_] = std::move(message_info);
-
-    if (is_full_()) {
+    if (if_full_())
+    {
+      if(this->reliable_)return false;
+      auto dump_info = std::move(message_info_abuffer_[read_index_]);
       read_index_ = next_(read_index_);
-    } else {
+
+      write_index_ = next_(write_index_);
+      ring_buffer_[write_index_] = std::move(request);
+      message_info_buffer_[write_index_] = std::move(message_info);
+      message_info_buffer_[read_index_]->merge_another_message_info(*dump_info);
+    }else{
+      write_index_ = next_(write_index_);
+      ring_buffer_[write_index_] = std::move(request);
+      message_info_buffer_[write_index_] = std::move(message_info);
       size_++;
     }
+    
+    return true;
   }
 
   /// Remove the oldest element from ring buffer
@@ -159,6 +168,71 @@ explicit RingBufferImplementation(size_t capacity)
     size_--;
 
     return std::make_pair(std::move(ring_buffer_[old_index]), std::move(message_info_buffer_[old_index]));
+  }
+
+  // following funcs are not thread-safe, you should use lock() to protect them
+  // these funcs are used to return the optimal msg to make the fused msg
+
+
+  // find_message is usually followed by dequeue_with_message_info
+  size_t find_message(uint64_t& pivot_earliest_time, uint64_y& pivot_latest_time, const uint64_t interval_bound, bool disparity_optimal){
+    if(!has_data_())return -1;
+    if(interval_bound == NO_INTERVAL_LIMIT && disparity_optimal == false)return read_index_;// return the front
+    auto pivot_interval = pivot_latest_time - pivot_earliest_time;
+    if(pivot_interval > interval_bound)return -2;//should not happen, a big mistake
+
+    size_t index = read_index_;
+    size_t offset = 0;
+    size_t min_index = -1;
+    uint64_t min_interval = NO_INTERVAL_LIMIT;
+    while(offset < size_){
+      auto tmp_earliest_time = message_info_buffer_[index]->earliest_this_sample_time();
+      auto tmp_latest_time = message_info_buffer_[index]->latest_this_sample_time();
+      auto tmp_interval = tmp_latest_time - tmp_earliest_time;
+      if(tmp_interval > interval_bound)return -2;// wont continue since it is a big mistake
+      auto latest = std::max(pivot_latest_time, tmp_latest_time);
+      auto earliest = std::min(pivot_earliest_time, tmp_earliest_time);
+      auto interval = latest - earliest;
+      if(min_interval>interval && interval <= interval_bound){
+        min_interval = interval;
+        min_index = index;
+        if(!disparity_optimal)return min_index;//find one, just return this earliest msg
+      }//if min_interval == interval, we will still use the earlier one, so no need to update min_index
+      
+      offset++;
+      index = next_(index);
+    }
+    return min_index;// if no msg is found, will still return -1
+  }
+
+  // this function will return the msg in the index position and dump earlier msgs, the returned msg's message_info will be updated
+  std::pair<BufferT, std::unique_ptr<rclcpp::MessageInfo>> dequeue_with_message_info(size_t index)
+  {
+    index = index % capacity_;
+    if ((!has_data_())||(write_index_ >= read_index_ && (index > write_index_||index<read_index_))||(write_index_ < read_index_ && index > write_index_ && index < read_index_)) {
+      //return std::make_pair(BufferT(), std::make_unique<rclcpp::MessageInfo>());
+      return std::make_pair(BufferT(), nullptr);
+    }
+    message_info_buffer_[index]->merge_another_message_info(*message_info_buffer_[read_index_]);
+    size_--;
+    if(index>=read_index_){
+      size_ = size_ - (index - read_index_);
+    }else{
+      size_ = size_ - (capacity_ - read_index_ + index);
+    }
+
+    read_index_ = next_(index);
+    return std::make_pair(std::move(ring_buffer_[index]), std::move(message_info_buffer_[index]));
+  }
+
+  void lock()
+  {
+    mutex_.lock();
+  }
+
+  void unlock()
+  {
+    mutex_.unlock();
   }
 #endif
   /// Get the next index value for the ring buffer

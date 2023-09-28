@@ -2,7 +2,7 @@
  * @Description: 
  * @Author: Sauron
  * @Date: 2023-05-16 17:07:07
- * @LastEditTime: 2023-07-27 23:04:42
+ * @LastEditTime: 2023-09-27 09:46:46
  * @LastEditors: Sauron
  */
 // Copyright 2020 Open Source Robotics Foundation, Inc.
@@ -32,6 +32,10 @@
 #endif
 namespace rclcpp
 {
+#ifdef INTERNEURON
+#include<limits>
+const uint64_t NO_INTERVAL_LIMIT = std::numeric_limits<uint64_t>::max();
+#endif
 /// Additional meta data about messages taken from subscriptions.
 class RCLCPP_PUBLIC MessageInfo
 {
@@ -63,6 +67,15 @@ MessageInfo(const std::vector<std::string>&sensor_names);
   void update_TP_Info(std::string sensor_name, uint64_t this_sample_time, uint64_t last_sample_time, uint64_t remain_time);
   void update_TP_Info(std::string sensor_name, interneuron::TP_Info tp_info);
   interneuron::TP_Info& get_TP_Info(std::string sensor_name);
+
+  // merge function wont check whether these two message_infos are valid to be merged, it only do the work
+  // for the same sensor, it will use the new msg's this_sample_time and the old msg's last_sample_time and remain_time
+  // make sure that this msg is the new msg, and the msg to be merged is the old msg
+  void merge_another_message_info(MessageInfo& another_message_info);
+  
+  //although we could carry these info, we get them during the execution
+  uint64_t earliest_this_sample_time();
+  uint64_t latest_this_sample_time();
 
   std::map<std::string, interneuron::TP_Info> tp_infos_;//key is the sensor name
 

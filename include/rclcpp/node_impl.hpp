@@ -144,11 +144,12 @@ Node::create_intra_subscription(
         ROSMessageT,
         AllocatorT>;
         //TODO: qos may need some checks
+  auto node_topics_interface = rclcpp::node_interfaces::get_node_topics_interface(*this);
   auto subscription_intra_process = std::make_shared<SubscriptionIntraProcessT>(
         any_subscription_callback,
         options.get_allocator(),
         context,
-        extend_name_with_sub_namespace(topic_name, this->get_sub_namespace()),  // important to get like this, as it has the fully-qualified name
+        node_topics_interface->resolve_topic_name(extend_name_with_sub_namespace(topic_name, this->get_sub_namespace())),  // important to get like this, as it has the fully-qualified name
         qos,
         rclcpp::detail::resolve_intra_process_buffer_type(options.intra_process_buffer_type, any_subscription_callback));
   auto ipm = context->get_sub_context<rclcpp::experimental::IntraProcessManager>();
